@@ -1,0 +1,6 @@
+# --- Custom Compiled Binaries & Object Files ---
+*.o
+*.bin
+**/target/
+**/*.o
+**/*.bin
