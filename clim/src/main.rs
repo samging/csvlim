@@ -79,18 +79,20 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
     let mut b = Vec::new();
 
     const NAME_KEY_STORE: &'static str = "KEY_SAVE.txt";
-    let mut file_check = File::open(NAME_KEY_STORE)?;
-    let mut content = String::with_capacity(buffer_limit);
+    let mut file_check = match File::open(NAME_KEY_STORE) {
+        Ok(file) => file,
+        Err(_) => File::create(NAME_KEY_STORE)?,
+    };
 
+    let mut content = String::with_capacity(buffer_limit);
     (&mut file_check).take(buffer_limit as u64).read_to_string(&mut content)?;
 
     println!("HERE {:#?}", content);
 
-    let ordered_map: BTreeMap<u64, u64> = serde_json::from_str(&content)
-        .unwrap_or_else(|_| BTreeMap::new());
+    let ordered_map: BTreeMap<u64, u64> = serde_json::from_str(&content).unwrap_or_else(|_| BTreeMap::new()); //where it stopped
 
-    println!("Parsed Map (serde): {:#?}", ordered_map);
-    println!("index_to_walk_on: {}", index_to_walk_on);
+    println!("Parsed Map (serde): {:#?}", ordered_map); //this does not print
+    println!("index_to_walk_on: {}", index_to_walk_on); //this does not print
 
     match ordered_map.get(&index_to_walk_on){
         Some(v) => {
@@ -102,15 +104,15 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
             for (i, munch_byte) in data.iter().enumerate() {
                 if *munch_byte == 10 {
                     b.push(i);
-                } //if not in 10 data -> then throw error
+                } //if buffer is too small for reading to the '\n' then throw panic
             }
             let mut keys_hashed = BTreeMap::new();
 
             for (i, bt) in b.iter().enumerate() {
-                keys_hashed.insert(i+1, bt);
+                keys_hashed.insert((i+1) as u64, bt);
             }
 
-            let serialized = serde_json::to_string_pretty(&keys_hashed)?;
+            let serialized = to_string_pretty(&keys_hashed)?;
             let mut key_store = File::create(NAME_KEY_STORE)?;
             key_store.write_all(&serialized.as_bytes())?;
             println!("Written");
