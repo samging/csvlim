@@ -8,13 +8,13 @@ pub struct Buffer<'a> {
 
 
 impl<'a> Buffer<'a> {
-    fn new() -> Buffer {
+    pub fn new() -> Self {
         Buffer {
-            bytes: vec::new()
+            bytes: Vec::new()
         }
     }
 
-    fn readwrite(&mut self, words: Option<&'a [u8]>) -> () {
+    pub fn readwrite(&mut self, words: Option<&'a [u8]>) -> () {
         match words {
             Some(byte_slices) => {
                 if let Ok(text) = std::str::from_utf8(byte_slices) {
@@ -37,15 +37,19 @@ impl<'a> Buffer<'a> {
     }
 }
 
-fn read_file_by_limit(file_name: &Option<File>, buffer_limit: u64) -> Result<Vec<u8>, io::Error> {
+fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<Vec<u8>, io::Error> {
     /*
      * reads file with set limit
      */
-    match file_name.as_ref() {
+
+    match file_name {
         Some(f) => {
             let mut buff: Vec<u8> = Vec::new();
-                f.try_clone()?.take(buffer_limit)
+
+            let file_object = File::create(f)?;
+                file_object.try_clone()?.take(buffer_limit)
                 .read_to_end(&mut buff)?;
+
             Ok(buff)
         }
         _ => Err(io::Error::new(io::ErrorKind::NotFound, "No file provided"))
@@ -81,22 +85,31 @@ fn main() {
                 absolute(file_object)
             }
         };
+
         let formatted_path = abs_formatter(&cleaned_input)?;
 
         match note_keeper(None, &formatted_path, String::from("something that should be a String type")) {
-            Ok(_) => match(read_file_by_limit(Some(&formatted_path), 100)) {
-                Ok(limit_buff) => {
-                   if (Buffer.bytes.len() != 0) {
-                       let mut instance = Buffer::new();
-                   }
-                   instance::readwrite(Some(limit_buff));
-               } Err(e) => panic!("read_file_by_limit call has panicked")
+                Ok(_) => match read_file_by_limit(Some(&formatted_path), 100) {
+
+                    Ok(limit_buff) => {
+                        let mut Inst: Buffer = Buffer::new();
+
+                        if Inst.bytes.len() == 0 {
+                           let mut Inst = Buffer::new();
+                       }
+
+                       Inst.readwrite(Some(&limit_buff));
+                        Ok("Ran alright!".to_string())
+                   } Err(e) => {
+                        eprintln!("Ran into: e{}", &e);
+                        Err(e)
+                    }
+                }
+                Err(e) => {
+                    eprintln!("note_keeper failed: {}", e);
+                    panic!("note_keeper failed!");
+                }
             }
-            Err(e) => {
-                eprintln!("note_keeper failed: {}", e);
-                panic!("note_keeper failed!");
-            }
-        }
 
     };
 
