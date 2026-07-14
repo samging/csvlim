@@ -73,22 +73,42 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u8) -> Result<u8, io
             let mut cursor: u64 = 0;
             let mut buff = [0u8; 1];
             let mut longterm: Vec<u8> = Vec::with_capacity(1000);
+            let pattern_first = [32,32,34,from_line,34,58,32,49,50,57];
+            let pattern_second = [32,32,34,from_line+1,34,58,32,49,50,57];
+            let trailing_pattern = [44,10];
 
-            while buff[0] != from_line {
+            loop {
                 file_open.seek(SeekFrom::Start(cursor))?;
+
                 match file_open.read_exact(&mut buff) {
+
                     Ok(_) => {
-                        longterm.push(buff[0]);
+                        let mut caption = 0;
+                        let mut number_one = vec!();
+                        if buff[0] == pattern_first[caption] {
+                            println!("Start pattern");
+                            while buff[0] != trailing_pattern[0] {
+                                number_one.push(buff[0]);
+                            }
+                            if buff[0] == pattern_second[caption] {
+                                while buff[0] != trailing_pattern[0] {
+                                    number_two.push(buff[0]);
+                                }
+                            }
+                        }
+                        //longterm.push(buff[0]);
+                        println!("Ranges: [{:?} -> {:?}]", number_one, number_two);
                         cursor += 1;
-                        print!(" {}", buff[0]);
                     }
+
                     Err(ref e) if e.kind() == ErrorKind::UnexpectedEof => {
                         return Err(Error::new(ErrorKind::NotFound, "Reached EOF without finding target byte"));
                     }
-                    Err(e) => return Err(e), // Propagate actual reading errors
+                    Err(e) => return Err(e),
                 }
             }
-            println!("ajsdifojasdfoiajsdfoiasjdfoaisdjfaoisdjfoisdfjaosifjoisdfjoaisdfjR");
+            let conv = std::str::from_utf8(&mut longterm).unwrap();
+            println!("{:?}", conv);
             Ok(buff[0])
         }
         None => {
@@ -186,7 +206,7 @@ fn main() {
 
 
                         println!("COMPUTE BUFFER SIZE BEFORE");
-                        compute_buffer_size(Some(Path::new(NAME_KEY_STORE)), 3);
+                        compute_buffer_size(Some(Path::new(NAME_KEY_STORE)), 51);
                         println!("COMPUTE BUFFER SIZE AFTER");
                         //println!("{:?}",&limit_buff[res as usize..=res as usize +100].to_string());
                         let slice: &[u8] = &limit_buff[res as usize..=res as usize + 100];
