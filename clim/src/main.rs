@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::{absolute, Path, PathBuf};
+use std::iter::IntoIterator;
 
 pub struct Buffer<'a> {
     bytes: Vec<[&'a str; 100]>
@@ -23,9 +24,13 @@ impl<'a> Buffer<'a> {
                         array[i] = word
                     }
                     self.bytes.push(array);
-                        for (i, bytes) in self.bytes.iter().enumerate() {
+
+                    /*
+                     for (i, bytes) in self.bytes.iter().enumerate() {
                             println!("{}\t{:#?}", i, bytes);
                         }
+
+                     */
                 } else {
                     println!("Utf-8 conversion failed");
                 }
@@ -44,12 +49,11 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
 
     match file_name {
         Some(f) => {
+            println!("File Object {:#?}", file_name.unwrap().file_name());
             let mut buff: Vec<u8> = Vec::new();
 
-            let file_object = File::create(f)?;
-                file_object.try_clone()?.take(buffer_limit)
-                .read_to_end(&mut buff)?;
-
+            let mut file_object = File::open(f)?;
+            (&mut file_object).take(buffer_limit).read_to_end(&mut buff)?;
             Ok(buff)
         }
         _ => Err(io::Error::new(io::ErrorKind::NotFound, "No file provided"))
@@ -69,6 +73,15 @@ fn note_keeper(desired_line: Option<u64>, file_opening: &PathBuf, content: Strin
     Ok(())
 }
 
+pub fn walk_for_index(data: &[u8], buffer_limit: usize, _index_to_walk_on: u64) {
+    println!("{:#?}", data);
+    for (i, munch_byte) in data.iter().enumerate() {
+        if *munch_byte == 10 {
+            println!("getting new line:\t`i:\t{:?}`\t`{:#?}`", i, munch_byte);
+        } //if not in 10 data -> then throw error
+    }
+}
+
 fn main() {
     let mut get_user_run_save = || -> Result<String, io::Error> {
         let mut cin = String::with_capacity(100);
@@ -77,8 +90,8 @@ fn main() {
 
         let cleaned_input = cin.trim_end().to_string();
 
-        let abs_formatter = |c: &str| -> Result<PathBuf, io::Error> {
-            let file_object = Path::new(c);
+        let abs_formatter = |c: String| -> Result<PathBuf, io::Error> {
+            let file_object = Path::new(&c);
             if file_object.is_absolute() {
                 Ok(file_object.to_path_buf())
             } else {
@@ -86,17 +99,15 @@ fn main() {
             }
         };
 
-        let formatted_path = abs_formatter(&cleaned_input)?;
+        let formatted_path = abs_formatter(cleaned_input)?;
 
         match note_keeper(None, &formatted_path, String::from("something that should be a String type")) {
-                Ok(_) => match read_file_by_limit(Some(&formatted_path), 100) {
+                Ok(_) => match read_file_by_limit(Some(&formatted_path), 1000) {
 
                     Ok(limit_buff) => {
-                        let mut Inst: Buffer = Buffer::new();
+                        walk_for_index(&limit_buff, 500, 3);
 
-                        if Inst.bytes.len() == 0 {
-                           let mut Inst = Buffer::new();
-                       }
+                        let mut Inst: Buffer = Buffer::new();
 
                        Inst.readwrite(Some(&limit_buff));
                         Ok("Ran alright!".to_string())
