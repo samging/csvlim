@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::{absolute, Path, PathBuf};
-use std::iter::IntoIterator;
 use std::collections::BTreeMap;
 use serde_json::to_string_pretty;
 
@@ -75,7 +74,7 @@ fn note_keeper(desired_line: Option<u64>, file_opening: &PathBuf, content: Strin
     Ok(())
 }
 
-pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -> Result<(), Box<dyn std::error::Error>> {
+pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -> Result<Option<u64>, Box<dyn std::error::Error>> {
     let mut b = Vec::new();
 
     const NAME_KEY_STORE: &'static str = "KEY_SAVE.txt";
@@ -95,8 +94,9 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
     println!("index_to_walk_on: {}", index_to_walk_on); //this does not print
 
     match ordered_map.get(&index_to_walk_on){
-        Some(v) => {
-            println!("walked on:'{}' found: {}",index_to_walk_on, v);
+        Some(&v) => {
+            //println!("walked on:'{}' found: {}",index_to_walk_on, v);
+            return Ok(Some(v))
         },
         None => {
             println!("CRPLE");
@@ -119,7 +119,7 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
         }
     }
 
-    Ok(())
+    Ok(None)
 }
 
 fn main() {
@@ -145,8 +145,17 @@ fn main() {
                 Ok(_) => match read_file_by_limit(Some(&formatted_path), 1000) {
 
                     Ok(limit_buff) => {
-                        walk_for_index(&limit_buff, 500, 3);
+                        let res: u64 = walk_for_index(&limit_buff, 500, 3)
+                            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?
+                            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Walk_for_index [ERR]"))?;
 
+                        //println!("{:?}",&limit_buff[res as usize..=res as usize +100].to_string());
+                        let slice: &[u8] = &limit_buff[res as usize..=res as usize + 100];
+
+                        let stringish = std::str::from_utf8(slice)
+                            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+
+                        println!("{:?}",stringish);
                         let mut Inst: Buffer = Buffer::new();
 
                        Inst.readwrite(Some(&limit_buff));
