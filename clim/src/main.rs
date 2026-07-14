@@ -1,8 +1,13 @@
 use std::fs::File;
-use std::io::{self, Read, Write};
+use std::io::{self, Read, Write, SeekFrom, Seek, ErrorKind, Error};
 use std::path::{absolute, Path, PathBuf};
 use std::collections::BTreeMap;
 use serde_json::to_string_pretty;
+
+
+
+const NAME_KEY_STORE: &'static str = "KEY_SAVE.txt"; //find indexes
+static FILE_PATH_NAME: &'static str = "keep.txt"; //keep track where we ended
 
 pub struct Buffer<'a> {
     bytes: Vec<[&'a str; 100]>
@@ -61,8 +66,39 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
     }
 }
 
+fn compute_buffer_size(file_name: Option<&Path>, from_line: u8) -> Result<u8, io::Error> {
+    match file_name {
+        Some(fd) => {
+            let mut file_open = File::open(fd)?;
+            let mut cursor: u64 = 0;
+            let mut buff = [0u8; 1];
+            let mut longterm: Vec<u8> = Vec::with_capacity(1000);
+
+            while buff[0] != from_line {
+                file_open.seek(SeekFrom::Start(cursor))?;
+                match file_open.read_exact(&mut buff) {
+                    Ok(_) => {
+                        longterm.push(buff[0]);
+                        cursor += 1;
+                        print!(" {}", buff[0]);
+                    }
+                    Err(ref e) if e.kind() == ErrorKind::UnexpectedEof => {
+                        return Err(Error::new(ErrorKind::NotFound, "Reached EOF without finding target byte"));
+                    }
+                    Err(e) => return Err(e), // Propagate actual reading errors
+                }
+            }
+            println!("ajsdifojasdfoiajsdfoiasjdfoaisdjfaoisdjfoisdfjaosifjoisdfjoaisdfjR");
+            Ok(buff[0])
+        }
+        None => {
+            println!("Nothing to read from ..");
+            Err(Error::new(ErrorKind::Other, "No file path provided"))
+        }
+    }
+}
+
 fn note_keeper(desired_line: Option<u64>, file_opening: &PathBuf, content: String) -> Result<(), io::Error>{
-    static FILE_PATH_NAME: &'static str = "keep.txt";
 
     let abs_path = absolute(Path::new(FILE_PATH_NAME))?;
     let mut file_reading = File::create(abs_path)?;
@@ -77,7 +113,6 @@ fn note_keeper(desired_line: Option<u64>, file_opening: &PathBuf, content: Strin
 pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -> Result<Option<u64>, Box<dyn std::error::Error>> {
     let mut b = Vec::new();
 
-    const NAME_KEY_STORE: &'static str = "KEY_SAVE.txt";
     let mut file_check = match File::open(NAME_KEY_STORE) {
         Ok(file) => file,
         Err(_) => File::create(NAME_KEY_STORE)?,
@@ -149,6 +184,10 @@ fn main() {
                             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?
                             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Walk_for_index [ERR]"))?;
 
+
+                        println!("COMPUTE BUFFER SIZE BEFORE");
+                        compute_buffer_size(Some(Path::new(NAME_KEY_STORE)), 3);
+                        println!("COMPUTE BUFFER SIZE AFTER");
                         //println!("{:?}",&limit_buff[res as usize..=res as usize +100].to_string());
                         let slice: &[u8] = &limit_buff[res as usize..=res as usize + 100];
 
