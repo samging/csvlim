@@ -8,7 +8,13 @@ pub struct Buffer<'a> {
 
 
 impl<'a> Buffer<'a> {
-    fn readwrite(&mut self, words: Option<&'a [u8]>) {
+    fn new() -> Buffer {
+        Buffer {
+            bytes: vec::new()
+        }
+    }
+
+    fn readwrite(&mut self, words: Option<&'a [u8]>) -> () {
         match words {
             Some(byte_slices) => {
                 if let Ok(text) = std::str::from_utf8(byte_slices) {
@@ -16,7 +22,10 @@ impl<'a> Buffer<'a> {
                     for (i, word) in text.split_whitespace().take(100).enumerate(){
                         array[i] = word
                     }
-                    self.bytes.push(array)
+                    self.bytes.push(array);
+                        for (i, bytes) in self.bytes.iter().enumerate() {
+                            println!("{}\t{:#?}", i, bytes);
+                        }
                 } else {
                     println!("Utf-8 conversion failed");
                 }
@@ -75,12 +84,20 @@ fn main() {
         let formatted_path = abs_formatter(&cleaned_input)?;
 
         match note_keeper(None, &formatted_path, String::from("something that should be a String type")) {
-            Ok(_) => Ok(cin),
+            Ok(_) => match(read_file_by_limit(Some(&formatted_path), 100)) {
+                Ok(limit_buff) => {
+                   if (Buffer.bytes.len() != 0) {
+                       let mut instance = Buffer::new();
+                   }
+                   instance::readwrite(Some(limit_buff));
+               } Err(e) => panic!("read_file_by_limit call has panicked")
+            }
             Err(e) => {
                 eprintln!("note_keeper failed: {}", e);
                 panic!("note_keeper failed!");
             }
         }
+
     };
 
     let res = get_user_run_save().unwrap();
