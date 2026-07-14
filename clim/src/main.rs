@@ -73,9 +73,20 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u8) -> Result<u8, io
             let mut cursor: u64 = 0;
             let mut buff = [0u8; 1];
             let mut longterm: Vec<u8> = Vec::with_capacity(1000);
-            let pattern_first = [32,32,34,from_line,34,58,32,49,50,57];
-            let pattern_second = [32,32,34,from_line+1,34,58,32,49,50,57];
-            let trailing_pattern = [44,10];
+            //let pattern_first = [32,32,34,from_line,34,58,32,49,50,57];
+            
+            let mut pattern_first = vec![32, 32, 34];
+            pattern_first.extend(from_line.to_string().bytes());
+            pattern_first.extend(&[34,58,32]);
+
+            let mut pattern_second = vec![32, 32, 34];
+            pattern_second.extend((from_line + 3).to_string().bytes());
+            pattern_second.extend(&[34,58,32]);
+            let mut number_one_R = Vec::new();
+            let mut number_two_R = Vec::new();
+
+            let mut state = 0;
+            let mut pattern_idx = 0;
 
             loop {
                 file_open.seek(SeekFrom::Start(cursor))?;
@@ -83,21 +94,48 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u8) -> Result<u8, io
                 match file_open.read_exact(&mut buff) {
 
                     Ok(_) => {
-                        let mut caption = 0;
-                        let mut number_one = vec!();
-                        if buff[0] == pattern_first[caption] {
-                            println!("Start pattern");
-                            while buff[0] != trailing_pattern[0] {
-                                number_one.push(buff[0]);
-                            }
-                            if buff[0] == pattern_second[caption] {
-                                while buff[0] != trailing_pattern[0] {
-                                    number_two.push(buff[0]);
+                        let byte = buff[0];
+                            match state {
+                                0 => {
+                                    if byte == pattern_first[pattern_idx] {
+                                        pattern_idx += 1;
+                                        if pattern_idx == pattern_first.len() {
+                                            state = 1;
+                                            pattern_idx = 0;
+                                        }
+                                    } else {
+                                        // Only reset if the current byte failed to match
+                                        pattern_idx = if byte == pattern_first[0] { 1 } else { 0 };
+                                    }
+                                },
+                                1 => {
+                                    if byte == 44 || byte == 10 {
+                                        state = 2;
+                                    } else if byte.is_ascii_digit() {
+                                        number_one_R.push(byte);
+                                    }
+                                },
+
+                                2 => {
+                                    if byte == pattern_second[pattern_idx] {
+                                        pattern_idx += 1;
+                                        if pattern_idx == pattern_second.len() {
+                                            state = 3;
+                                            pattern_idx = 0;
+                                        }
+                                    } else {
+                                        pattern_idx = if byte == pattern_second[0] { 1 } else { 0 };
+                                    }
                                 }
-                            }
+                                3 => {
+                                    if byte == 44 || byte == 10 {
+                                        break;
+                                    } else if byte.is_ascii_digit() {
+                                        number_two_R.push(byte);
+                                    }
+                                }
+                                _=> break,
                         }
-                        //longterm.push(buff[0]);
-                        println!("Ranges: [{:?} -> {:?}]", number_one, number_two);
                         cursor += 1;
                     }
 
@@ -107,13 +145,32 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u8) -> Result<u8, io
                     Err(e) => return Err(e),
                 }
             }
-            let conv = std::str::from_utf8(&mut longterm).unwrap();
-            println!("{:?}", conv);
-            Ok(buff[0])
+
+            let str_one = std::str::from_utf8(&mut number_one_R).map_err(|_| {
+                Error::new(ErrorKind::InvalidData, "Invalid UTF")
+            })?;
+
+            let str_two = std::str::from_utf8(&mut number_two_R).map_err(|_| {
+                Error::new(ErrorKind::InvalidData, "Invalid UTF")
+            })?;
+
+            let offset_one: u64 = str_one.parse().map_err(|_| {
+                Error::new(ErrorKind::InvalidData, "Can't parse to U64")
+            })?;
+
+            let offset_two: u64 = str_two.parse().map_err(|_| {
+                Error::new(ErrorKind::InvalidData, "-||-")
+            })?;
+
+            let buffer_size = (offset_two - offset_one) as u8;
+            println!("Ranges: [{} -> {}] = {}Bytes", offset_one, offset_two, buffer_size);
+
+            Ok(buffer_size)
         }
+
         None => {
             println!("Nothing to read from ..");
-            Err(Error::new(ErrorKind::Other, "No file path provided"))
+            Err(Error::new(ErrorKind::NotFound, "No file path provided"))
         }
     }
 }
@@ -206,7 +263,7 @@ fn main() {
 
 
                         println!("COMPUTE BUFFER SIZE BEFORE");
-                        compute_buffer_size(Some(Path::new(NAME_KEY_STORE)), 51);
+                        compute_buffer_size(Some(Path::new(NAME_KEY_STORE)), 3);
                         println!("COMPUTE BUFFER SIZE AFTER");
                         //println!("{:?}",&limit_buff[res as usize..=res as usize +100].to_string());
                         let slice: &[u8] = &limit_buff[res as usize..=res as usize + 100];
