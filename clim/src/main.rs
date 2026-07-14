@@ -2,6 +2,8 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::{absolute, Path, PathBuf};
 use std::iter::IntoIterator;
+use std::collections::BTreeMap;
+use serde_json::to_string_pretty;
 
 pub struct Buffer<'a> {
     bytes: Vec<[&'a str; 100]>
@@ -73,13 +75,49 @@ fn note_keeper(desired_line: Option<u64>, file_opening: &PathBuf, content: Strin
     Ok(())
 }
 
-pub fn walk_for_index(data: &[u8], buffer_limit: usize, _index_to_walk_on: u64) {
-    println!("{:#?}", data);
-    for (i, munch_byte) in data.iter().enumerate() {
-        if *munch_byte == 10 {
-            println!("getting new line:\t`i:\t{:?}`\t`{:#?}`", i, munch_byte);
-        } //if not in 10 data -> then throw error
+pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -> Result<(), Box<dyn std::error::Error>> {
+    let mut b = Vec::new();
+
+    const NAME_KEY_STORE: &'static str = "KEY_SAVE.txt";
+    let mut file_check = File::open(NAME_KEY_STORE)?;
+    let mut content = String::with_capacity(buffer_limit);
+
+    (&mut file_check).take(buffer_limit as u64).read_to_string(&mut content)?;
+
+    println!("HERE {:#?}", content);
+
+    let ordered_map: BTreeMap<u64, u64> = serde_json::from_str(&content)
+        .unwrap_or_else(|_| BTreeMap::new());
+
+    println!("Parsed Map (serde): {:#?}", ordered_map);
+    println!("index_to_walk_on: {}", index_to_walk_on);
+
+    match ordered_map.get(&index_to_walk_on){
+        Some(v) => {
+            println!("walked on:'{}' found: {}",index_to_walk_on, v);
+        },
+        None => {
+            println!("CRPLE");
+            println!("{:#?}", data);
+            for (i, munch_byte) in data.iter().enumerate() {
+                if *munch_byte == 10 {
+                    b.push(i);
+                } //if not in 10 data -> then throw error
+            }
+            let mut keys_hashed = BTreeMap::new();
+
+            for (i, bt) in b.iter().enumerate() {
+                keys_hashed.insert(i+1, bt);
+            }
+
+            let serialized = serde_json::to_string_pretty(&keys_hashed)?;
+            let mut key_store = File::create(NAME_KEY_STORE)?;
+            key_store.write_all(&serialized.as_bytes())?;
+            println!("Written");
+        }
     }
+
+    Ok(())
 }
 
 fn main() {
