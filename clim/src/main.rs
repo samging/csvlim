@@ -267,16 +267,28 @@ fn main() {
                         println!("COMPUTE BUFFER SIZE AFTER");
                         println!("Seeking from {} to {}", sSeek, eSeek);
                         //println!("{:?}",&limit_buff[res as usize..=res as usize +100].to_string());
-                        for S in (sSeek..eSeek) {
-                            println!("{}",S);
+                        let mut f = File::open(&formatted_path)?;
+
+                        for S in sSeek..eSeek {
+                            f.seek(SeekFrom::Start(S))?;
+                            let mut buf= [0u8;1];
+                            f.read_exact(&mut buf)?;
+
+                            let utf_character = std::str::from_utf8(&buf).map_err(|_|{
+                                std::io::Error::new(
+                                        std::io::ErrorKind::InvalidData,
+                                        format!("Seeking conversion failed at byte position {}", S),
+                                )
+                            })?;
+                            print!("{}", utf_character);
                         }
 
-                        let slice: &[u8] = &limit_buff[res as usize..=res as usize + 100];
+                        //let slice: &[u8] = &limit_buff[res as usize..=res as usize + 100];
 
-                        let stringish = std::str::from_utf8(slice)
-                            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+                        //let stringish = std::str::from_utf8(slice)
+                            //.map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
 
-                        println!("{:?}",stringish);
+                        //println!("{:?}",stringish);
                         let mut Inst: Buffer = Buffer::new();
 
                        Inst.readwrite(Some(&limit_buff));
