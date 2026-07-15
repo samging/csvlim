@@ -93,7 +93,7 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
                 *total = *total + 1;
 
                 if ch[0] == 10 {
-                    vasm.push(format!("[{}:{}:{}]", seq_len,state, total));
+                    vasm.push(format!("{}:{}:{}", seq_len,state, total));
                     *seq_len = 0;
                     *state = 1;
                 }
@@ -134,7 +134,7 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
                 })?);*/
             }
             let mut finEd: Vec<String> = Vec::new();
-            vasm.push(format!("[{}:{}:{}]", seq_len,state, total));
+            vasm.push(format!("{}:{}:{}", seq_len,state, total));
             println!("\n\n\nAssembled Tree: {:?}", vasm);
 
             finEd.push("{\n".to_string());
@@ -143,6 +143,7 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             }
 
             print!("{:?}", finEd);
+
             println!("\n");
 
             (&mut file_object).take(buffer_limit).read_to_end(&mut buff)?;
