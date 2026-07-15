@@ -92,7 +92,7 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
             2 => {
                 *seq_len = *seq_len + 1;
                 *total = *total + 1;
-                print!("(({}))-> [{}:{}]ASCII:{} of {:?} --[S] {}\n",key,seq_len,state,ch[0],tostr(ch)?,total);
+                //print!("(({}))-> [{}:{}]ASCII:{} of {:?} --[S] {}\n",key,seq_len,state,ch[0],tostr(ch)?,total);
                 if ch[0] == 10 {
                     *key = *key + 1;
                     //vasm.push(format!("{}:{}", key, seq_len));
@@ -381,7 +381,7 @@ fn main() {
             let mut file_object_char = File::open(&formatted_path)?;
             for i in 0..715 {
                 let ch = reading_by_character(&mut file_object_char, i)?;
-                print!("{:?}", &ch);
+                //print!("{:?}", &ch);
                 //read_file_by_limit(Some(&formatted_path), 1000);
                 //formatting_to_json(&ch,  &mut state, &mut seq_len, &mut total, &mut vasm, &mut key);
             }
@@ -401,15 +401,16 @@ fn main() {
             println!("\n\n");
             Ok(())
         };
-        println!("CALLING CHAR STREAMING:");
+        println!("--- CALLING CHAR STREAMING: ---");
         char_stream_closure(&formatted_path);
+        Ok(())
     };
 
     println!("callling bluk closure");
     bulk_closure();
 
 
-    let get_user_run_save = || -> Result<String, io::Error> {
+    /*let get_user_run_save = || -> Result<String, io::Error> {
         let mut cin = String::with_capacity(100);
         let stdin = io::stdin();
         stdin.read_line(&mut cin)?;
@@ -483,7 +484,7 @@ fn main() {
                 }
             }
 
-    };
+    };*/
 
-    get_user_run_save().unwrap();
+    //get_user_run_save().unwrap();
 }
