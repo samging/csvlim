@@ -153,7 +153,6 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
                 finEd.push(format!("{:?}: {:?},\n", current, next));
             }
 
-            //70? bp
             for slider in vasm[vasm.len()-2..vasm.len()].chunks_exact(2) {
                 let current = &slider[0];
                 let next: u64 = slider[1].parse().unwrap_or(0);
@@ -162,7 +161,14 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             //finEd.push("}".to_string());
 
             println!("\n\n\n");
-            print!("{:?}", finEd.join("  "));
+            //let result: Vec<String>= finEd.into_iter().map(|w: Vec<String>| w.join("  ")).collect();
+            let combined: String = finEd.join("  ");
+            //print!("{:?}", finEd.join("  "));
+            print!("{:?}", combined);
+
+            let mut hh = File::create(NAME_KEY_STORE_REBUILD); //bp
+            hh?.write_all(combined.as_bytes());
+            println!("WRITTEN COMBINED");
 
             println!("\n");
 
