@@ -66,7 +66,7 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
     }
 }
 
-fn compute_buffer_size(file_name: Option<&Path>, from_line: u8) -> Result<u8, io::Error> {
+fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,u64), io::Error> {
     match file_name {
         Some(fd) => {
             let mut file_open = File::open(fd)?;
@@ -162,10 +162,10 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u8) -> Result<u8, io
                 Error::new(ErrorKind::InvalidData, "-||-")
             })?;
 
-            let buffer_size = (offset_two - offset_one) as u8;
+            let buffer_size: u64 = (offset_two - offset_one);
             println!("Ranges: [{} -> {}] = {}Bytes", offset_one, offset_two, buffer_size);
 
-            Ok(buffer_size)
+            Ok((offset_one, offset_two))
         }
 
         None => {
@@ -263,9 +263,14 @@ fn main() {
 
 
                         println!("COMPUTE BUFFER SIZE BEFORE");
-                        compute_buffer_size(Some(Path::new(NAME_KEY_STORE)), 3);
+                        let (sSeek, eSeek) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE)), 3)?;
                         println!("COMPUTE BUFFER SIZE AFTER");
+                        println!("Seeking from {} to {}", sSeek, eSeek);
                         //println!("{:?}",&limit_buff[res as usize..=res as usize +100].to_string());
+                        for S in (sSeek..eSeek) {
+                            println!("{}",S);
+                        }
+
                         let slice: &[u8] = &limit_buff[res as usize..=res as usize + 100];
 
                         let stringish = std::str::from_utf8(slice)
