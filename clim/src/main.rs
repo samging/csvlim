@@ -58,6 +58,50 @@ fn reading_by_character(file_name: &mut File, by_index: u64) -> Result<Vec<u8>, 
     //print!("{:?}", bb);
     Ok(bb)
 }
+fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut u64, vasm: &mut Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+
+    fn tostr(ch: &[u8]) -> Result<&str, std::io::Error> {
+        std::str::from_utf8(ch).map_err(|_| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Reading from utf8 failed"
+            )
+        })
+    }
+
+    // ',' 44
+    // ' ' 32
+    //print!("[{} {}]", tostr(ch)?, ch[0]);
+
+    print!("{}", tostr(ch)?);
+
+    //if ch[0] == 10 { println!("") ;}
+    //println!("{}", state) ;
+
+
+    match state {
+            0 => if ch[0] == 10 {
+                *state = 1;
+            },
+            1 =>  {
+                *state = 2;
+            },
+
+            2 => {
+                //print!("-> [{}:{}]ASCII:{}\n",seq_len,state,ch[0]);
+                *seq_len = *seq_len + 1;
+                *total = *total + 1;
+
+                if(ch[0] == 10) {
+                    vasm.push(format!("[{}:{}:{}]", seq_len,state, total));
+                    *seq_len = 0;
+                    *state = 1;
+                }
+            },
+            _ => {}
+        }
+    Ok(())
+}
 fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<Vec<u8>, io::Error> {
     /*
      * reads file with set limit
@@ -75,13 +119,24 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             let (beg, end): (u64, u64) = compute_buffer_size(Some(handle_name), 1)?;
 
             println!("[read_file_by_limit](seek): ");
+            let mut state : u64= 0;
+            let mut seq_len : u64 = 0;
+            let mut total: u64 = 0;
+            let mut vasm: Vec<String>= Vec::new();
+
             for x in beg..end {
-                print!("{}",(std::str::from_utf8(&reading_by_character(&mut file_object, x)?).map_err(|_| {
+
+                formatting_to_json(&reading_by_character(&mut file_object, x)?, &mut state, &mut seq_len, &mut total, &mut vasm);
+                /*formatting_to_json(std::str::from_utf8(&reading_by_character(&mut file_object, x)?).map_err(|_| {
                     std::io::Error::new(
                         std::io::ErrorKind::InvalidData, "Reading from utf8 failed"
                     )
-                })?));
+                })?);*/
             }
+            vasm.push(format!("[{}:{}:{}]", seq_len,state, total));
+
+            println!("\n\n\nAssembled Tree: {:?}", vasm);
+
             println!("\n");
 
             (&mut file_object).take(buffer_limit).read_to_end(&mut buff)?;
@@ -98,7 +153,7 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,
             let mut file_open = File::open(fd)?;
             let mut cursor: u64 = 0;
             let mut buff = [0u8; 1];
-            let mut longterm: Vec<u8> = Vec::with_capacity(1000);
+            let _longterm: Vec<u8> = Vec::with_capacity(1000);
 
             let mut pattern_first = vec![32, 32, 34];
             pattern_first.extend(from_line.to_string().bytes());
@@ -187,7 +242,7 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,
                 Error::new(ErrorKind::InvalidData, "-||-")
             })?;
 
-            let buffer_size: u64 = (offset_two - offset_one);
+            let buffer_size: u64 = offset_two - offset_one;
             println!("Ranges: [{} -> {}] = {}Bytes", offset_one, offset_two, buffer_size);
 
             Ok((offset_one, offset_two))
@@ -260,7 +315,7 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
 }
 
 fn main() {
-    let mut get_user_run_save = || -> Result<String, io::Error> {
+    let get_user_run_save = || -> Result<String, io::Error> {
         let mut cin = String::with_capacity(100);
         let stdin = io::stdin();
         stdin.read_line(&mut cin)?;
@@ -284,7 +339,7 @@ fn main() {
 
                     Ok(limit_buff) => {
                         //BYTE READING (impl):
-                        let res: u64 = walk_for_index(&limit_buff, 500, 3)
+                        let _res: u64 = walk_for_index(&limit_buff, 500, 3)
                             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?
                             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Walk_for_index [ERR]"))?;
 
@@ -333,5 +388,5 @@ fn main() {
 
     };
 
-    let res = get_user_run_save().unwrap();
+    get_user_run_save().unwrap();
 }
