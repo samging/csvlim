@@ -140,20 +140,26 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             }
 
             let mut finEd: Vec<String> = Vec::new();
-            vasm.push(format!("{}", seq_len));
+            //vasm.push(format!("{}", seq_len));
             println!("\n\n\nAssembled Tree: {:?}", vasm);
 
             finEd.push("{\n".to_string());
             finEd.push(format!("{:?}: {:?},\n",vasm[0], vasm[1].parse::<u64>().unwrap_or(0)));
 
 
-            for slider in vasm[2..].chunks_exact(2) {
+            for slider in vasm[2..vasm.len()-2].chunks_exact(2) {
                 let current = &slider[0];
                 let next: u64 = slider[1].parse().unwrap_or(0);
                 finEd.push(format!("{:?}: {:?},\n", current, next));
             }
 
-            finEd.push("}".to_string());
+            //70? bp
+            for slider in vasm[vasm.len()-2..vasm.len()].chunks_exact(2) {
+                let current = &slider[0];
+                let next: u64 = slider[1].parse().unwrap_or(0);
+                finEd.push(format!("{:?}: {:?}\n}}", current, next));
+            }
+            //finEd.push("}".to_string());
 
             println!("\n\n\n");
             print!("{:?}", finEd.join("  "));
@@ -299,7 +305,8 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
     let mut content = String::with_capacity(buffer_limit);
     (&mut file_check).take(buffer_limit as u64).read_to_string(&mut content)?;
 
-    println!("HERE {:#?}", content);
+    println!("{:#?}", content);
+    println!("<<<<<<<<<<<<<<<<<");
 
     let ordered_map: BTreeMap<u64, u64> = serde_json::from_str(&content).unwrap_or_else(|_| BTreeMap::new()); //where it stopped
 
