@@ -92,7 +92,7 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
                 *seq_len = *seq_len + 1;
                 *total = *total + 1;
 
-                if(ch[0] == 10) {
+                if ch[0] == 10 {
                     vasm.push(format!("[{}:{}:{}]", seq_len,state, total));
                     *seq_len = 0;
                     *state = 1;
@@ -133,10 +133,16 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
                     )
                 })?);*/
             }
+            let mut finEd: Vec<String> = Vec::new();
             vasm.push(format!("[{}:{}:{}]", seq_len,state, total));
-
             println!("\n\n\nAssembled Tree: {:?}", vasm);
 
+            finEd.push("{\n".to_string());
+            for str_val in vasm {
+                finEd.push(format!("\n  {:?}", str_val));
+            }
+
+            print!("{:?}", finEd);
             println!("\n");
 
             (&mut file_object).take(buffer_limit).read_to_end(&mut buff)?;
@@ -160,7 +166,7 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,
             pattern_first.extend(&[34,58,32]);
 
             let mut pattern_second = vec![32, 32, 34];
-            pattern_second.extend((from_line + 3).to_string().bytes());
+            pattern_second.extend((from_line + 10).to_string().bytes());
             pattern_second.extend(&[34,58,32]);
             let mut number_one_R = Vec::new();
             let mut number_two_R = Vec::new();
