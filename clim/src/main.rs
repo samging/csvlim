@@ -48,6 +48,14 @@ impl<'a> Buffer<'a> {
     }
 }
 
+fn reading_by_character(file_name: &mut File, by_index: u64) -> Result<(), io::Error>{
+    //println!("[reading_by_character] Seeking:");
+    file_name.seek(SeekFrom::Start(by_index))?;
+    let mut bb = vec![0u8;1];
+    file_name.read_exact(&mut bb);
+    print!("{:?}", bb);
+    Ok(())
+}
 fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<Vec<u8>, io::Error> {
     /*
      * reads file with set limit
@@ -55,10 +63,16 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
 
     match file_name {
         Some(f) => {
+
             println!("File Object {:#?}", file_name.unwrap().file_name());
             let mut buff: Vec<u8> = Vec::new();
 
             let mut file_object = File::open(f)?;
+
+            for x in (1..310) {
+                reading_by_character(&mut file_object, x)?;
+            }
+
             (&mut file_object).take(buffer_limit).read_to_end(&mut buff)?;
             Ok(buff)
         }
@@ -253,10 +267,12 @@ fn main() {
 
         let formatted_path = abs_formatter(cleaned_input)?;
 
+        //BYTE READING (impl):
         match note_keeper(None, &formatted_path, String::from("something that should be a String type")) {
                 Ok(_) => match read_file_by_limit(Some(&formatted_path), 1000) {
 
                     Ok(limit_buff) => {
+                        //BYTE READING (impl):
                         let res: u64 = walk_for_index(&limit_buff, 500, 3)
                             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?
                             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Walk_for_index [ERR]"))?;
