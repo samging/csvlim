@@ -128,8 +128,10 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             let mut total: u64 = 0;
             let mut key: u64 = 0;
             let mut vasm: Vec<String>= Vec::new();
+            let metadata: u64 = file_name.expect("REASON").metadata()?.len();
 
-            for x in beg..end {
+            println!("METADATA: {}", metadata);
+            for x in beg..metadata {
 
                 formatting_to_json(&reading_by_character(&mut file_object, x)?, &mut state, &mut seq_len, &mut total, &mut vasm, &mut key);
                 /*formatting_to_json(std::str::from_utf8(&reading_by_character(&mut file_object, x)?).map_err(|_| {
@@ -166,9 +168,10 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             //print!("{:?}", finEd.join("  "));
             print!("{:?}", combined);
 
-            let mut hh = File::create(NAME_KEY_STORE_REBUILD); //bp
+            let hh = File::create(NAME_KEY_STORE_REBUILD); //bp
             hh?.write_all(combined.as_bytes());
-            println!("WRITTEN COMBINED");
+
+            println!("\n\nWRITTEN COMBINED");
 
             println!("\n");
 
@@ -184,6 +187,8 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,
         Some(fd) => {
             println!("[Compute_buffer_size] file_name: {:?}", file_name);
             let mut file_open = File::open(fd)?;
+            //let mut file_open = File::open(NAME_KEY_STORE_REBUILD)?;
+
             let mut cursor: u64 = 0;
             let mut buff = [0u8; 1];
             let _longterm: Vec<u8> = Vec::with_capacity(1000);
@@ -193,7 +198,7 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,
             pattern_first.extend(&[34,58,32]);
 
             let mut pattern_second = vec![32, 32, 34];
-            pattern_second.extend((from_line + 10).to_string().bytes());
+            pattern_second.extend((from_line + 4).to_string().bytes());
             pattern_second.extend(&[34,58,32]);
             let mut number_one_R = Vec::new();
             let mut number_two_R = Vec::new();
