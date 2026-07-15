@@ -69,7 +69,11 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
 
             let mut file_object = File::open(f)?;
 
-            for x in (1..310) {
+            let handle_name = Path::new(NAME_KEY_STORE);
+            let (beg, end): (u64, u64) = compute_buffer_size(Some(handle_name), 1)?;
+
+            println!("[read_file_by_limit](seek): ");
+            for x in (beg..end) {
                 reading_by_character(&mut file_object, x)?;
             }
 
@@ -83,12 +87,12 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
 fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,u64), io::Error> {
     match file_name {
         Some(fd) => {
+            println!("[Compute_buffer_size] file_name: {:?}", file_name);
             let mut file_open = File::open(fd)?;
             let mut cursor: u64 = 0;
             let mut buff = [0u8; 1];
             let mut longterm: Vec<u8> = Vec::with_capacity(1000);
-            //let pattern_first = [32,32,34,from_line,34,58,32,49,50,57];
-            
+
             let mut pattern_first = vec![32, 32, 34];
             pattern_first.extend(from_line.to_string().bytes());
             pattern_first.extend(&[34,58,32]);
