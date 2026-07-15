@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, Read, Write, SeekFrom, Seek, ErrorKind, Error};
 use std::path::{absolute, Path, PathBuf};
 use std::collections::BTreeMap;
@@ -88,7 +88,7 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
             },
 
             2 => {
-                //print!("-> [{}:{}]ASCII:{}\n",seq_len,state,ch[0]);
+                print!("(({}))-> [{}:{}]ASCII:{}\n",key,seq_len,state,ch[0]);
                 *seq_len = *seq_len + 1;
                 *total = *total + 1;
 
@@ -120,10 +120,10 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             let mut file_object = File::open(f)?;
 
             let handle_name = Path::new(NAME_KEY_STORE);
-            let (beg, end): (u64, u64) = compute_buffer_size(Some(handle_name), 1)?;
+            //let (beg, end): (u64, u64) = compute_buffer_size(Some(handle_name), 1)?;
 
             println!("[read_file_by_limit](seek): ");
-            let mut state : u64= 0;
+            let mut state : u64= 2;
             let mut seq_len : u64 = 0;
             let mut total: u64 = 0;
             let mut key: u64 = 0;
@@ -131,7 +131,7 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             let metadata: u64 = file_name.expect("REASON").metadata()?.len();
 
             println!("METADATA: {}", metadata);
-            for x in beg..metadata {
+            for x in 0..metadata {
 
                 formatting_to_json(&reading_by_character(&mut file_object, x)?, &mut state, &mut seq_len, &mut total, &mut vasm, &mut key);
                 /*formatting_to_json(std::str::from_utf8(&reading_by_character(&mut file_object, x)?).map_err(|_| {
@@ -168,7 +168,7 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             //print!("{:?}", finEd.join("  "));
             print!("{:?}", combined);
 
-            let hh = File::create(NAME_KEY_STORE_REBUILD); //bp
+            let hh = File::create(NAME_KEY_STORE_REBUILD);
             hh?.write_all(combined.as_bytes());
 
             println!("\n\nWRITTEN COMBINED");
@@ -186,6 +186,9 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,
     match file_name {
         Some(fd) => {
             println!("[Compute_buffer_size] file_name: {:?}", file_name);
+            let mut file_read = fs::read_to_string(fd)?;
+            let mut file_open = walk_for_index(&file_read.into_bytes(), 1000 as usize, 10);//bp
+
             let mut file_open = File::open(fd)?;
             //let mut file_open = File::open(NAME_KEY_STORE_REBUILD)?;
 
