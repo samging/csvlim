@@ -188,8 +188,8 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,
     match file_name {
         Some(fd) => {
             println!("[Compute_buffer_size] file_name: {:?}", file_name);
-            let mut file_open = File::open(fd)?;
-            //let mut file_open = File::open(NAME_KEY_STORE_REBUILD)?;
+            //let mut file_open = File::open(fd)?;
+            let mut file_open = File::open(NAME_KEY_STORE_REBUILD)?;
 
             let mut cursor: u64 = 0;
             let mut buff = [0u8; 1];
@@ -376,6 +376,35 @@ fn main() {
         };
 
         let formatted_path = abs_formatter(cleaned_input)?;
+        println!("Reading by characters: ");
+
+        let char_stream_closure = |formatted: &PathBuf| -> Result<(), io::Error>{
+            let mut file_object_char = File::open(&formatted_path)?;
+            for i in 0..715 {
+                let ch = reading_by_character(&mut file_object_char, i)?;
+                print!("{:?}", &ch);
+                //read_file_by_limit(Some(&formatted_path), 1000);
+                //formatting_to_json(&ch,  &mut state, &mut seq_len, &mut total, &mut vasm, &mut key);
+            }
+
+            read_file_by_limit(Some(&formatted_path), 1000); //now find with that file...
+            let (f, t) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE)),3)?; //bp
+            //println!("FROM {} TO {}",f,t);
+            println!("FINAL READINGS: ");
+            for ix in f..t {
+                let ch = reading_by_character(&mut file_object_char, ix)?;
+
+                let get_slice = std::str::from_utf8(&ch).map_err(|_|{
+                    Error::new(ErrorKind::InvalidData, "-||-")
+                })?;
+                print!("{}", get_slice);
+            }
+            println!("\n\n");
+            Ok(())
+        };
+
+        println!("CALLING CHAR STREAMING:");
+        char_stream_closure(&formatted_path);
 
         //BYTE READING (impl):
         match note_keeper(None, &formatted_path, String::from("something that should be a String type")) {
@@ -383,7 +412,6 @@ fn main() {
 
                     Ok(limit_buff) => {
                         //BYTE READING (impl) :
-                        //bp
 
                         let res: u64 = walk_for_index(&limit_buff, 1000, 9)
                             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?
