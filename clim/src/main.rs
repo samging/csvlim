@@ -379,7 +379,11 @@ fn main() {
         //this sorta is the new update:
         let char_stream_closure = |formatted: &PathBuf| -> Result<(), io::Error>{
             let mut file_object_char = File::open(&formatted_path)?;
-            for i in 0..715 {
+
+            let metadata: u64 = Path::new(&formatted_path).metadata()?.len(); //bp
+            println!("METADATA: {}", metadata);
+
+            for i in 0..metadata {
                 let ch = reading_by_character(&mut file_object_char, i)?;
                 //print!("{:?}", &ch);
                 //read_file_by_limit(Some(&formatted_path), 1000);
@@ -387,9 +391,10 @@ fn main() {
             }
 
             read_file_by_limit(Some(&formatted_path), 1000); //now find with that file...
-            let (f, t) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE)), 3)?; //bp
-            //println!("FROM {} TO {}",f,t);
+            let (f, t) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), 3)?;
+
             println!("FINAL READINGS: ");
+
             for ix in f..t {
                 let ch = reading_by_character(&mut file_object_char, ix)?;
 
@@ -402,6 +407,7 @@ fn main() {
             Ok(())
         };
         println!("--- CALLING CHAR STREAMING: ---");
+
         char_stream_closure(&formatted_path);
         Ok(())
     };
