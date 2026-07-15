@@ -58,7 +58,7 @@ fn reading_by_character(file_name: &mut File, by_index: u64) -> Result<Vec<u8>, 
     //print!("{:?}", bb);
     Ok(bb)
 }
-fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut u64, vasm: &mut Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut u64, vasm: &mut Vec<String>, key: &mut u64) -> Result<(), Box<dyn std::error::Error>> {
 
     fn tostr(ch: &[u8]) -> Result<&str, std::io::Error> {
         std::str::from_utf8(ch).map_err(|_| {
@@ -93,7 +93,11 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
                 *total = *total + 1;
 
                 if ch[0] == 10 {
-                    vasm.push(format!("{}:{}:{}", seq_len,state, total));
+                    *key = *key + 1;
+                    //vasm.push(format!("{}:{}", key, seq_len));
+
+                    vasm.push(format!("{}", key));
+                    vasm.push(format!("{}",total));
                     *seq_len = 0;
                     *state = 1;
                 }
@@ -122,27 +126,37 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             let mut state : u64= 0;
             let mut seq_len : u64 = 0;
             let mut total: u64 = 0;
+            let mut key: u64 = 0;
             let mut vasm: Vec<String>= Vec::new();
 
             for x in beg..end {
 
-                formatting_to_json(&reading_by_character(&mut file_object, x)?, &mut state, &mut seq_len, &mut total, &mut vasm);
+                formatting_to_json(&reading_by_character(&mut file_object, x)?, &mut state, &mut seq_len, &mut total, &mut vasm, &mut key);
                 /*formatting_to_json(std::str::from_utf8(&reading_by_character(&mut file_object, x)?).map_err(|_| {
                     std::io::Error::new(
                         std::io::ErrorKind::InvalidData, "Reading from utf8 failed"
                     )
                 })?);*/
             }
+
             let mut finEd: Vec<String> = Vec::new();
-            vasm.push(format!("{}:{}:{}", seq_len,state, total));
+            vasm.push(format!("{}", seq_len));
             println!("\n\n\nAssembled Tree: {:?}", vasm);
 
             finEd.push("{\n".to_string());
-            for str_val in vasm {
-                finEd.push(format!("\n  {:?}", str_val));
+            finEd.push(format!("{:?}: {:?},\n",vasm[0], vasm[1].parse::<u64>().unwrap_or(0)));
+
+
+            for slider in vasm[2..].chunks_exact(2) {
+                let current = &slider[0];
+                let next: u64 = slider[1].parse().unwrap_or(0);
+                finEd.push(format!("{:?}: {:?},\n", current, next));
             }
 
-            print!("{:?}", finEd);
+            finEd.push("}".to_string());
+
+            println!("\n\n\n");
+            print!("{:?}", finEd.join("  "));
 
             println!("\n");
 
