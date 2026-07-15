@@ -7,6 +7,8 @@ use serde_json::to_string_pretty;
 
 
 const NAME_KEY_STORE: &'static str = "KEY_SAVE.txt"; //find indexes
+
+const NAME_KEY_STORE_REBUILD: &'static str = "KEY_SAVE_REBUILD.txt";
 static FILE_PATH_NAME: &'static str = "keep.txt"; //keep track where we ended
 
 pub struct Buffer<'a> {
