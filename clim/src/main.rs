@@ -359,6 +359,56 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
 }
 
 fn main() {
+    let bulk_closure = || ->  Result<(), io::Error> {
+        let mut cin = String::with_capacity(100);
+        let stdin = io::stdin();
+        stdin.read_line(&mut cin)?;
+
+        let cleaned_input = cin.trim_end().to_string();
+
+        let abs_formatter = |c: String| -> Result<PathBuf, io::Error> {
+            let file_object = Path::new(&c);
+            if file_object.is_absolute() {
+                Ok(file_object.to_path_buf())
+            } else {
+                absolute(file_object)
+            }
+        };
+
+        let formatted_path = abs_formatter(cleaned_input)?;
+        //this sorta is the new update:
+        let char_stream_closure = |formatted: &PathBuf| -> Result<(), io::Error>{
+            let mut file_object_char = File::open(&formatted_path)?;
+            for i in 0..715 {
+                let ch = reading_by_character(&mut file_object_char, i)?;
+                print!("{:?}", &ch);
+                //read_file_by_limit(Some(&formatted_path), 1000);
+                //formatting_to_json(&ch,  &mut state, &mut seq_len, &mut total, &mut vasm, &mut key);
+            }
+
+            read_file_by_limit(Some(&formatted_path), 1000); //now find with that file...
+            let (f, t) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE)), 3)?; //bp
+            //println!("FROM {} TO {}",f,t);
+            println!("FINAL READINGS: ");
+            for ix in f..t {
+                let ch = reading_by_character(&mut file_object_char, ix)?;
+
+                let get_slice = std::str::from_utf8(&ch).map_err(|_| {
+                    Error::new(ErrorKind::InvalidData, "-||-")
+                })?;
+                print!("{}", get_slice);
+            }
+            println!("\n\n");
+            Ok(())
+        };
+        println!("CALLING CHAR STREAMING:");
+        char_stream_closure(&formatted_path);
+    };
+
+    println!("callling bluk closure");
+    bulk_closure();
+
+
     let get_user_run_save = || -> Result<String, io::Error> {
         let mut cin = String::with_capacity(100);
         let stdin = io::stdin();
@@ -378,33 +428,6 @@ fn main() {
         let formatted_path = abs_formatter(cleaned_input)?;
         println!("Reading by characters: ");
 
-        let char_stream_closure = |formatted: &PathBuf| -> Result<(), io::Error>{
-            let mut file_object_char = File::open(&formatted_path)?;
-            for i in 0..715 {
-                let ch = reading_by_character(&mut file_object_char, i)?;
-                print!("{:?}", &ch);
-                //read_file_by_limit(Some(&formatted_path), 1000);
-                //formatting_to_json(&ch,  &mut state, &mut seq_len, &mut total, &mut vasm, &mut key);
-            }
-
-            read_file_by_limit(Some(&formatted_path), 1000); //now find with that file...
-            let (f, t) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE)),3)?; //bp
-            //println!("FROM {} TO {}",f,t);
-            println!("FINAL READINGS: ");
-            for ix in f..t {
-                let ch = reading_by_character(&mut file_object_char, ix)?;
-
-                let get_slice = std::str::from_utf8(&ch).map_err(|_|{
-                    Error::new(ErrorKind::InvalidData, "-||-")
-                })?;
-                print!("{}", get_slice);
-            }
-            println!("\n\n");
-            Ok(())
-        };
-
-        println!("CALLING CHAR STREAMING:");
-        char_stream_closure(&formatted_path);
 
         //BYTE READING (impl):
         match note_keeper(None, &formatted_path, String::from("something that should be a String type")) {
