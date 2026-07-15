@@ -48,13 +48,13 @@ impl<'a> Buffer<'a> {
     }
 }
 
-fn reading_by_character(file_name: &mut File, by_index: u64) -> Result<(), io::Error>{
+fn reading_by_character(file_name: &mut File, by_index: u64) -> Result<Vec<u8>, io::Error>{
     //println!("[reading_by_character] Seeking:");
     file_name.seek(SeekFrom::Start(by_index))?;
     let mut bb = vec![0u8;1];
     file_name.read_exact(&mut bb);
-    print!("{:?}", bb);
-    Ok(())
+    //print!("{:?}", bb);
+    Ok(bb)
 }
 fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<Vec<u8>, io::Error> {
     /*
@@ -73,9 +73,14 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             let (beg, end): (u64, u64) = compute_buffer_size(Some(handle_name), 1)?;
 
             println!("[read_file_by_limit](seek): ");
-            for x in (beg..end) {
-                reading_by_character(&mut file_object, x)?;
+            for x in beg..end {
+                print!("{}",(std::str::from_utf8(&reading_by_character(&mut file_object, x)?).map_err(|_| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::InvalidData, "Reading from utf8 failed"
+                    )
+                })?));
             }
+            println!("\n");
 
             (&mut file_object).take(buffer_limit).read_to_end(&mut buff)?;
             Ok(buff)
