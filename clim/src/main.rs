@@ -184,7 +184,7 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
     }
 }
 
-fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,u64), io::Error> {
+fn compute_buffer_size(file_name: Option<&Path>, from_line: u64, to_line: u64) -> Result<(u64,u64), io::Error> {
     match file_name {
         Some(fd) => {
             println!("[Compute_buffer_size] file_name: {:?}", file_name);
@@ -200,7 +200,7 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,
             pattern_first.extend(&[34,58,32]);
 
             let mut pattern_second = vec![32, 32, 34];
-            pattern_second.extend((from_line + 4).to_string().bytes());
+            pattern_second.extend((to_line).to_string().bytes());
             pattern_second.extend(&[34,58,32]);
             let mut number_one_R = Vec::new();
             let mut number_two_R = Vec::new();
@@ -383,15 +383,16 @@ fn main() {
             let metadata: u64 = Path::new(&formatted_path).metadata()?.len(); //bp
             println!("METADATA: {}", metadata);
 
+            /* []
             for i in 0..metadata {
                 let ch = reading_by_character(&mut file_object_char, i)?;
                 //print!("{:?}", &ch);
                 //read_file_by_limit(Some(&formatted_path), 1000);
                 //formatting_to_json(&ch,  &mut state, &mut seq_len, &mut total, &mut vasm, &mut key);
-            }
+            } */
 
-            read_file_by_limit(Some(&formatted_path), 1000); //now find with that file...
-            let (f, t) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), 3)?;
+            //[] read_file_by_limit(Some(&formatted_path), 1000); //now find with that file...
+            let (f, t) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), 1000, 1001)?;
 
             println!("FINAL READINGS: ");
 
