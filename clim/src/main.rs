@@ -58,7 +58,7 @@ fn reading_by_character(file_name: &mut File, by_index: u64) -> Result<Vec<u8>, 
     //print!("{:?}", bb);
     Ok(bb)
 }
-fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut u64, vasm: &mut Vec<String>, key: &mut u64) -> Result<(), Box<dyn std::error::Error>> {
+fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut i64, vasm: &mut Vec<String>, key: &mut u64) -> Result<(), Box<dyn std::error::Error>> {
 
     fn tostr(ch: &[u8]) -> Result<&str, std::io::Error> {
         std::str::from_utf8(ch).map_err(|_| {
@@ -73,7 +73,7 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
     // ' ' 32
     //print!("[{} {}]", tostr(ch)?, ch[0]);
 
-    print!("{}", tostr(ch)?);
+    //print!("{}", tostr(ch)?);
 
     //if ch[0] == 10 { println!("") ;}
     //println!("{}", state) ;
@@ -81,17 +81,18 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
 
     match state {
             0 => if ch[0] == 10 {
+                *total = *total + 1;
                 *state = 1;
             },
             1 =>  {
+                *total = *total + 1;
                 *state = 2;
             },
 
             2 => {
-                print!("(({}))-> [{}:{}]ASCII:{}\n",key,seq_len,state,ch[0]);
                 *seq_len = *seq_len + 1;
                 *total = *total + 1;
-
+                print!("(({}))-> [{}:{}]ASCII:{} of {:?} --[S] {}\n",key,seq_len,state,ch[0],tostr(ch)?,total);
                 if ch[0] == 10 {
                     *key = *key + 1;
                     //vasm.push(format!("{}:{}", key, seq_len));
@@ -125,7 +126,7 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
             println!("[read_file_by_limit](seek): ");
             let mut state : u64= 2;
             let mut seq_len : u64 = 0;
-            let mut total: u64 = 0;
+            let mut total: i64 = -1;
             let mut key: u64 = 0;
             let mut vasm: Vec<String>= Vec::new();
             let metadata: u64 = file_name.expect("REASON").metadata()?.len();
@@ -175,7 +176,8 @@ fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<
 
             println!("\n");
 
-            (&mut file_object).take(buffer_limit).read_to_end(&mut buff)?;
+            let mut file_object2 = File::open(f)?;
+            (&mut file_object2).take(buffer_limit).read_to_end(&mut buff)?;
             Ok(buff)
         }
         _ => Err(io::Error::new(io::ErrorKind::NotFound, "No file provided"))
@@ -186,9 +188,6 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64) -> Result<(u64,
     match file_name {
         Some(fd) => {
             println!("[Compute_buffer_size] file_name: {:?}", file_name);
-            let mut file_read = fs::read_to_string(fd)?;
-            let mut file_open = walk_for_index(&file_read.into_bytes(), 1000 as usize, 10);//bp
-
             let mut file_open = File::open(fd)?;
             //let mut file_open = File::open(NAME_KEY_STORE_REBUILD)?;
 
@@ -319,7 +318,9 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
     let mut content = String::with_capacity(buffer_limit);
     (&mut file_check).take(buffer_limit as u64).read_to_string(&mut content)?;
 
-    println!("{:#?}", content);
+    //println!("{:#?}", content);
+
+    //println!("{:?}", data);
     println!("<<<<<<<<<<<<<<<<<");
 
     let ordered_map: BTreeMap<u64, u64> = serde_json::from_str(&content).unwrap_or_else(|_| BTreeMap::new()); //where it stopped
@@ -335,6 +336,7 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
         None => {
             println!("CRPLE");
             println!("{:#?}", data);
+
             for (i, munch_byte) in data.iter().enumerate() {
                 if *munch_byte == 10 {
                     b.push(i);
@@ -380,8 +382,10 @@ fn main() {
                 Ok(_) => match read_file_by_limit(Some(&formatted_path), 1000) {
 
                     Ok(limit_buff) => {
-                        //BYTE READING (impl):
-                        let _res: u64 = walk_for_index(&limit_buff, 500, 3)
+                        //BYTE READING (impl) :
+                        //bp
+
+                        let res: u64 = walk_for_index(&limit_buff, 1000, 9)
                             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?
                             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Walk_for_index [ERR]"))?;
 
