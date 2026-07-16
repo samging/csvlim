@@ -356,7 +356,7 @@ fn note_keeper(file_opening: Option<&PathBuf>) -> Result<(), io::Error>{
     Ok(())
 }
 
-fn read_file(file_p: Option<&PathBuf>) -> Result<(), io::Error> { //bp6 needs keep.txt, so just source it...
+fn read_file(file_p: Option<&PathBuf>) -> Result<bool, io::Error> { //bp6 needs keep.txt, so just source it...
     let content = fs::read_to_string(FILE_PATH_NAME).unwrap();
     let reg = Regex::new(r#"(\w+\.\w+)"\s(\d+)"#).unwrap();
 
@@ -366,14 +366,21 @@ fn read_file(file_p: Option<&PathBuf>) -> Result<(), io::Error> { //bp6 needs ke
     };
 
     println!("Regex groups: {:?}\n read lines: {:?}", &trycapt[1], &trycapt[2]);
+    let path_object = Path::new(file_p.unwrap());
 
-    let metadata: u64 = Path::new(file_p.unwrap()).metadata()?.len();
+    let metadata: u64 = path_object.metadata()?.len();
+    let file_name: String = path_object.file_name().and_then(|name| name.to_str()).map(|s| s.to_string()).unwrap();
 
     let captured_bytes: u64 = trycapt[2].parse::<u64>().unwrap();
+    let captured_name: String = trycapt[1].to_string();
 
-    println!("{} to {}", captured_bytes, metadata);
-
-    Ok(())
+    if captured_bytes == metadata && captured_name == file_name {
+        println!("(C) -> [Read: {} to Given: {}]\t[Read: {} to Given: {}]", captured_bytes, metadata, captured_name, file_name);
+        Ok::<bool, io::Error>(false)
+    } else {
+        println!("(!) -> [Read: {} to Given: {}]\t[Read: {} to Given: {}]", captured_bytes, metadata, captured_name, file_name);
+        Ok::<bool, io::Error>(true)
+    }
 } //bpp
 
 pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -> Result<Option<u64>, Box<dyn std::error::Error>> {
@@ -521,11 +528,18 @@ fn main() {
         };
         println!("--- CALLING CHAR STREAMING: ---");
         */
+        match read_file(Some(&formatted_path))?{
+            true => {
+                println!("Needs to re-read");
+                char_stream_closure(&formatted_path);
+            },
+            false => {
+                println!("validation is alright");
+            },
+            _ => {}
+        }
+
         note_keeper(Some(&formatted_path));
-        read_file(Some(&formatted_path))?;
-
-        //char_stream_closure(&formatted_path); bp4
-
         //println!("{:?}",vv);
         Ok(())
     };
