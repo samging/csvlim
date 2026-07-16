@@ -347,8 +347,21 @@ fn note_keeper(file_opening: Option<&PathBuf>) -> Result<(), io::Error>{
     //let mut len_file = File::create(file_opening.is_some())?.metadata()?.len();
     let path = file_opening.as_deref().unwrap();
     println!("path: {:?}", path.file_name());
-    let len_file = File::create(path)?.metadata()?.len();
-    println!("Size is: {}", len_file);
+    let metadata: u64 = Path::new(path).metadata()?.len();
+    println!("Size is: {}", metadata);
+    let mut file_note = File::create(FILE_PATH_NAME)?;
+    file_note.write_all(format!("{:?} {}",path.file_name().unwrap(), &metadata).as_bytes())?;
+
+    Ok(())
+}
+
+fn read_file(file_op: Option<&PathBuf>) -> Result<(), io::Error> { //bp6 needs keep.txt, so just source it...
+    let file_path = file_op.expect("No file provided");
+    let content = fs::read_to_string(file_path)?;
+
+    println!("HERE");
+    println!("Content:\n{}", content);
+
     Ok(())
 }
 
@@ -499,7 +512,9 @@ fn main() {
         println!("--- CALLING CHAR STREAMING: ---");
         */
         note_keeper(Some(&formatted_path));
-        char_stream_closure(&formatted_path);
+        read_file(Some(&formatted_path))?;
+
+        //char_stream_closure(&formatted_path); bp4
 
         //println!("{:?}",vv);
         Ok(())
