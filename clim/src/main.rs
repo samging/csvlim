@@ -474,7 +474,9 @@ fn main() {
             Ok(())
         };*/
         fn char_stream_closure(
-            formatted: &PathBuf
+            formatted: &PathBuf,
+            from_line: u64,
+            to_line: u64
         ) -> Result<(), io::Error> {
             let mut file_object_char = File::open(formatted)?;
             let mut vv: Vec<String> = Vec::new();
@@ -497,7 +499,7 @@ fn main() {
             }
 
             //println!("{:?}", vv);
-            let (rx, ry) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), 100, 110)?;
+            let (rx, ry) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), from_line, to_line)?;
 
             for i in rx..ry {
                 print!("{}", std::str::from_utf8(&reading_by_character(&mut file_object_char, i)?).map_err(|_|{
@@ -531,7 +533,7 @@ fn main() {
         match read_file(Some(&formatted_path))?{
             true => {
                 println!("Needs to re-read");
-                char_stream_closure(&formatted_path);
+                char_stream_closure(&formatted_path, 2, 3);
             },
             false => {
                 println!("validation is alright");
