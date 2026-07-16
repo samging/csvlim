@@ -117,7 +117,7 @@ fn read_file_by_limit(stream: &[u8],
                       seq_len: &mut u64,
                       total: &mut i64,
                       vasm: &mut Vec<String>,
-                    key: &mut u64, used_vasm: &mut String, finEd: &mut Vec<String>) -> Result<(), io::Error> {
+                    key: &mut u64, used_vasm: &mut String, finEd: &mut Vec<String>, fs_iteration: u64, fs_size: u64) -> Result<(), io::Error> {
     /*
      * reads file with set limit
      */
@@ -142,7 +142,7 @@ fn read_file_by_limit(stream: &[u8],
     formatting_to_json(stream, state, seq_len, total, vasm, key);
 
     //let mut finEd: Vec<String> = Vec::new();
-    fn rest(vasm: &mut Vec<String>, finEd: &mut Vec<String>, used: &mut String) -> Result<(), Box<dyn std::error::Error>>{
+    fn rest(vasm: &mut Vec<String>, finEd: &mut Vec<String>, used: &mut String, fs_iteration: u64, fs_size: u64) -> Result<(), Box<dyn std::error::Error>>{
         //vasm.push(format!("{}", seq_len));
         //println!("\n\n\nAssembled Tree: {:?}", vasm);
 
@@ -177,9 +177,12 @@ fn read_file_by_limit(stream: &[u8],
 
         if finEd.len() > 0 {
             //print!("\n{:?} {:?}", finEd, vasm[vasm.len()-1]);
-            print!("\n{:?}", finEd.last().ok_or("Didn't go well"));
+            //print!("\n{:?}", finEd.last().ok_or("Didn't go well"));
 
-            if vasm[vasm.len() - 2] == "500000" {
+
+            //chage to interation BP
+            //println!("{} ==? {}", fs_iteration, fs_size - 1);
+            if fs_iteration == (fs_size - 1){
                 let mut handle = File::create(NAME_KEY_STORE_REBUILD)?;
                 let temp_string = finEd.join("  ");
                 handle.write_all("{\n  ".as_bytes());
@@ -211,7 +214,7 @@ fn read_file_by_limit(stream: &[u8],
     };
     if vasm.len() > 0 {
         if vasm.len() % 2 == 0 {
-            rest(vasm, finEd, used_vasm);
+            rest(vasm, finEd, used_vasm, fs_iteration, fs_size);
         }
     }
     /*if finEd == 499_998{
@@ -495,12 +498,29 @@ fn main() {
                 let ch = reading_by_character(&mut file_object_char, i)?;
                 //println!("{}", i);
 
-                read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key, &mut used_vasm, &mut finEd);
+                read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key, &mut used_vasm, &mut finEd,i, metadata);
             }
 
             //println!("{:?}", vv);
-            let (rx, ry) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), from_line, to_line)?;
+            let helper_func = || -> io::Result<(u64, u64)> {
+                let mut cin_from = String::with_capacity(10);
+                let stdin = io::stdin();
+                stdin.read_line(&mut cin_from)?;
 
+                let mut cin_to = String::with_capacity(10);
+                let stdin = io::stdin();
+                stdin.read_line(&mut cin_to)?;
+
+                let number_from: u64 = cin_from.trim().parse().unwrap();
+                let number_to: u64 = cin_to.trim().parse().unwrap();
+
+                let (rx, ry) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), number_from, number_to)?;
+                println!("{} {}", rx, ry);
+                Ok((rx, ry))
+            };
+
+            //let (rx, ry) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), number_from, number_to)?;
+            let (rx,ry) = helper_func()?;
             for i in rx..ry {
                 print!("{}", std::str::from_utf8(&reading_by_character(&mut file_object_char, i)?).map_err(|_|{
                     std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string())
