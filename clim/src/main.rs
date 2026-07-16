@@ -1,4 +1,4 @@
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use regex::Regex;
 use std::io::{self, Read, Write, SeekFrom, Seek, ErrorKind, Error};
 use std::path::{absolute, Path, PathBuf};
@@ -172,6 +172,10 @@ fn read_file_by_limit(stream: &[u8],
                 //println!("Identical!!!"); dbg
             } else {
                 //*used = current.clone();
+                //finEd.push(format!("{:?}: {:?},\n", current, next));
+                //(*used = current.clone();
+
+
                 finEd.push(format!("{:?}: {:?},\n", current, next));
                 *used = current.clone();
             }
@@ -185,6 +189,27 @@ fn read_file_by_limit(stream: &[u8],
 
             //chage to interation BP
             //println!("{} ==? {}", fs_iteration, fs_size - 1);
+
+            println!("INL: {:?}", finEd);
+            //let mut handle = File::open(NAME_KEY_STORE_REBUILD)?;
+            let mut handle = OpenOptions::new()
+                .write(true)
+                .append(true)
+                .create(true)
+                .open(NAME_KEY_STORE_REBUILD)?;
+
+
+
+            let temp_string = finEd.join("  ");
+            handle.write_all("  ".as_bytes())?;
+            handle.write_all(temp_string.as_bytes())?;
+
+            //let temp_string = finEd.join("  ");
+            //handle.write_all(temp_string.as_bytes());
+            finEd.clear();
+            vasm.clear();
+
+            /*
             if fs_iteration == (fs_size - 1){
                 let mut handle = File::create(NAME_KEY_STORE_REBUILD)?;
                 let temp_string = finEd.join("  ");
@@ -193,7 +218,7 @@ fn read_file_by_limit(stream: &[u8],
                 handle.write_all("}".as_bytes());
                 //let formatted : String = finEd.join(">>>>>>"); println!("{}", formatted);
                 println!("END");
-            }
+            } */
         }
 
         //finEd.push("}".to_string());
