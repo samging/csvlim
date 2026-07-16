@@ -97,8 +97,8 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
                     *key = *key + 1;
                     //vasm.push(format!("{}:{}", key, seq_len));
 
-                    vasm.push(format!("K{}", key));
-                    vasm.push(format!("T{}",total));
+                    vasm.push(format!("{}", key));
+                    vasm.push(format!("{}",total));
                     *seq_len = 0;
                     *state = 1;
                 }
@@ -107,6 +107,7 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
         }
     Ok(())
 }
+
 //bp3
 fn read_file_by_limit(stream: &[u8],
                       buffer_limit: u64,
@@ -115,7 +116,7 @@ fn read_file_by_limit(stream: &[u8],
                       seq_len: &mut u64,
                       total: &mut i64,
                       vasm: &mut Vec<String>,
-                    key: &mut u64) -> Result<(), io::Error> {
+                    key: &mut u64, used_vasm: &mut String, finEd: &mut Vec<String>) -> Result<(), io::Error> {
     /*
      * reads file with set limit
      */
@@ -126,7 +127,7 @@ fn read_file_by_limit(stream: &[u8],
     //let handle_name = Path::new(NAME_KEY_STORE);
     //let (beg, end): (u64, u64) = compute_buffer_size(Some(handle_name), 1)?;
 
-    println!("[read_file_by_limit](seek): IT{}", iteration);
+    //println!("[read_file_by_limit](seek): IT{} {:?} {} {} {}", iteration, stream, total, vasm.len(), key); dbg
     /*
     let mut state: u64 = 2;
     let mut seq_len: u64 = 0;
@@ -139,44 +140,84 @@ fn read_file_by_limit(stream: &[u8],
     //bp2
     formatting_to_json(stream, state, seq_len, total, vasm, key);
 
-    /*let rest = {
-        let mut finEd: Vec<String> = Vec::new();
+    //let mut finEd: Vec<String> = Vec::new();
+    fn rest(vasm: &mut Vec<String>, finEd: &mut Vec<String>, used: &mut String) -> Result<(), Box<dyn std::error::Error>>{
         //vasm.push(format!("{}", seq_len));
-        println!("\n\n\nAssembled Tree: {:?}", vasm);
+        //println!("\n\n\nAssembled Tree: {:?}", vasm);
 
-        finEd.push("{\n".to_string());
-        finEd.push(format!("{:?}: {:?},\n", vasm[0], vasm[1].parse::<u64>().unwrap_or(0)));
+        //finEd.push("{\n".to_string());
+        //finEd.push(format!("{:?}: {:?},\n", vasm[0], vasm[1].parse::<u64>().unwrap_or(0)));
 
 
-        for slider in vasm[2..vasm.len() - 2].chunks_exact(2) {
+        /*for slider in vasm[2..vasm.len() - 2].chunks_exact(2) {
             let current = &slider[0];
             let next: u64 = slider[1].parse().unwrap_or(0);
             finEd.push(format!("{:?}: {:?},\n", current, next));
-        }
+        }*/
+
+        //println!("VASM LEN {} to {} used: {}", vasm.len() - 2, vasm.len(), used); dbg
+
 
         for slider in vasm[vasm.len() - 2..vasm.len()].chunks_exact(2) {
             let current = &slider[0];
             let next: u64 = slider[1].parse().unwrap_or(0);
-            finEd.push(format!("{:?}: {:?}\n}}", current, next));
+
+            //let next: &String= &slider[1];
+
+            if *current == *used {
+                //println!("Identical!!!"); dbg
+            } else {
+                //*used = current.clone();
+                finEd.push(format!("{:?}: {:?},\n", current, next));
+                *used = current.clone();
+            }
+            //finEd.push(format!("{:?}: {:?}\n}}", current, next));
         }
+
+        if finEd.len() > 0 {
+            //print!("\n{:?} {:?}", finEd, vasm[vasm.len()-1]);
+            print!("\n{:?}", finEd.last().ok_or("Didn't go well"));
+
+            if vasm[vasm.len() - 2] == "500000" {
+                let mut handle = File::create(NAME_KEY_STORE_REBUILD)?;
+                let temp_string = finEd.join("  ");
+                handle.write_all("{\n  ".as_bytes());
+                handle.write_all(temp_string.as_bytes());
+                handle.write_all("}".as_bytes());
+                //let formatted : String = finEd.join(">>>>>>"); println!("{}", formatted);
+                println!("END");
+            }
+        }
+
         //finEd.push("}".to_string());
 
-        println!("\n\n\n");
+        //println!("\n\n\n");
         //let result: Vec<String>= finEd.into_iter().map(|w: Vec<String>| w.join("  ")).collect();
-        let combined: String = finEd.join("  ");
+        //let combined: String = finEd.join("  ");
         //print!("{:?}", finEd.join("  "));
-        print!("{:?}", combined);
+        //print!("{:?}", combined);
 
-        let hh = File::create(NAME_KEY_STORE_REBUILD);
-        hh?.write_all(combined.as_bytes());
+        //let hh = File::create(NAME_KEY_STORE_REBUILD);
+        //hh?.write_all(combined.as_bytes());
 
-        println!("\n\nWRITTEN COMBINED");
+        //println!("\n\nWRITTEN COMBINED");
 
-        println!("\n");
+        //println!("\n");
 
         //let mut file_object2 = File::open(f)?;
         //(&mut file_object2).take(buffer_limit).read_to_end(&mut buff)?;
-    };*/
+        Ok(())
+    };
+    if vasm.len() > 0 {
+        if vasm.len() % 2 == 0 {
+            rest(vasm, finEd, used_vasm);
+        }
+    }
+    /*if finEd == 499_998{
+        //print!("{:?}", finEd.into_iter().map(|w: Vec<String>| w.join("  ")));
+        let formatted: String = finEd.join("  ");
+        println!("{}", formatted);
+    }*/
 
     Ok(())
 }
@@ -292,15 +333,22 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64, to_line: u64) -
     }
 }
 
-fn note_keeper(desired_line: Option<u64>, file_opening: &PathBuf, content: String) -> Result<(), io::Error>{
+fn note_keeper(file_opening: Option<&PathBuf>) -> Result<(), io::Error>{
 
-    let abs_path = absolute(Path::new(FILE_PATH_NAME))?;
+    /*let abs_path = absolute(Path::new(FILE_PATH_NAME))?;
     let mut file_reading = File::create(abs_path)?;
     let line_bytes = desired_line.unwrap_or(0).to_le_bytes();
 
     (&mut file_reading).write_all(&line_bytes)?;
     (&mut file_reading).write_all(file_opening.to_string_lossy().as_bytes())?;
-    (&mut file_reading).write_all(content.as_bytes())?;
+    (&mut file_reading).write_all(content.as_bytes())?;*/
+
+    //syncing?
+    //let mut len_file = File::create(file_opening.is_some())?.metadata()?.len();
+    let path = file_opening.as_deref().unwrap();
+    println!("path: {:?}", path.file_name());
+    let len_file = File::create(path)?.metadata()?.len();
+    println!("Size is: {}", len_file);
     Ok(())
 }
 
@@ -403,7 +451,8 @@ fn main() {
             let mut seq_len: u64 = 0;
             let mut total: i64 = -1;
             let mut key: u64 = 0;
-
+            let mut used_vasm = String::new();
+            let mut finEd: Vec<String> = Vec::new();
 
             let metadata: u64 = Path::new(formatted).metadata()?.len();
             println!("METADATA: {}", metadata);
@@ -411,11 +460,23 @@ fn main() {
             for i in 0..metadata {
                 // Assuming reading_by_character returns a custom type or Option/String
                 let ch = reading_by_character(&mut file_object_char, i)?;
-                println!("{}", i);
+                //println!("{}", i);
 
-                read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key);
+                read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key, &mut used_vasm, &mut finEd);
             }
-            println!("{:?}", vv);
+
+            //println!("{:?}", vv);
+            let (rx, ry) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), 100, 110)?;
+
+            for i in rx..ry {
+                print!("{}", std::str::from_utf8(&reading_by_character(&mut file_object_char, i)?).map_err(|_|{
+                    std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string())
+                })?);
+            }
+
+            println!("[{rx} -> {ry}] <<< COMPUTED");
+            println!("<<<<< HERE (single vector value)");
+
             Ok(())
         }
 
@@ -437,6 +498,7 @@ fn main() {
         };
         println!("--- CALLING CHAR STREAMING: ---");
         */
+        note_keeper(Some(&formatted_path));
         char_stream_closure(&formatted_path);
 
         //println!("{:?}",vv);
