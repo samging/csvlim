@@ -55,7 +55,7 @@ fn reading_by_character(file_name: &mut File, by_index: u64) -> Result<Vec<u8>, 
     file_name.seek(SeekFrom::Start(by_index))?;
     let mut bb = vec![0u8;1];
     file_name.read_exact(&mut bb);
-    //print!("{:?}", bb);
+    //print!("{:?}", bb[0]);
     Ok(bb)
 }
 fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut i64, vasm: &mut Vec<String>, key: &mut u64) -> Result<(), Box<dyn std::error::Error>> {
@@ -97,8 +97,8 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
                     *key = *key + 1;
                     //vasm.push(format!("{}:{}", key, seq_len));
 
-                    vasm.push(format!("{}", key));
-                    vasm.push(format!("{}",total));
+                    vasm.push(format!("K{}", key));
+                    vasm.push(format!("T{}",total));
                     *seq_len = 0;
                     *state = 1;
                 }
@@ -107,84 +107,81 @@ fn formatting_to_json(ch: &[u8], state: &mut u64, seq_len: &mut u64, total: &mut
         }
     Ok(())
 }
-fn read_file_by_limit(file_name: Option<&PathBuf>, buffer_limit: u64) -> Result<Vec<u8>, io::Error> {
+//bp3
+fn read_file_by_limit(stream: &[u8],
+                      buffer_limit: u64,
+                      iteration: u64,
+                      state: &mut u64,
+                      seq_len: &mut u64,
+                      total: &mut i64,
+                      vasm: &mut Vec<String>,
+                    key: &mut u64) -> Result<(), io::Error> {
     /*
      * reads file with set limit
      */
 
-    match file_name {
-        Some(f) => {
+    //let mut buff: Vec<u8> = Vec::new();
+    //let mut file_object = File::open(f)?;
 
-            println!("File Object {:#?}", file_name.unwrap().file_name());
-            let mut buff: Vec<u8> = Vec::new();
+    //let handle_name = Path::new(NAME_KEY_STORE);
+    //let (beg, end): (u64, u64) = compute_buffer_size(Some(handle_name), 1)?;
 
-            let mut file_object = File::open(f)?;
+    println!("[read_file_by_limit](seek): IT{}", iteration);
+    /*
+    let mut state: u64 = 2;
+    let mut seq_len: u64 = 0;
+    let mut total: i64 = -1;
+    let mut key: u64 = 0;*/
+    //let metadata: u64 = file_name.expect("REASON").metadata()?.len();
 
-            let handle_name = Path::new(NAME_KEY_STORE);
-            //let (beg, end): (u64, u64) = compute_buffer_size(Some(handle_name), 1)?;
+    //println!("METADATA: {}", metadata);
 
-            println!("[read_file_by_limit](seek): ");
-            let mut state : u64= 2;
-            let mut seq_len : u64 = 0;
-            let mut total: i64 = -1;
-            let mut key: u64 = 0;
-            let mut vasm: Vec<String>= Vec::new();
-            let metadata: u64 = file_name.expect("REASON").metadata()?.len();
+    //bp2
+    formatting_to_json(stream, state, seq_len, total, vasm, key);
 
-            println!("METADATA: {}", metadata);
-            for x in 0..metadata {
+    /*let rest = {
+        let mut finEd: Vec<String> = Vec::new();
+        //vasm.push(format!("{}", seq_len));
+        println!("\n\n\nAssembled Tree: {:?}", vasm);
 
-                formatting_to_json(&reading_by_character(&mut file_object, x)?, &mut state, &mut seq_len, &mut total, &mut vasm, &mut key);
-                /*formatting_to_json(std::str::from_utf8(&reading_by_character(&mut file_object, x)?).map_err(|_| {
-                    std::io::Error::new(
-                        std::io::ErrorKind::InvalidData, "Reading from utf8 failed"
-                    )
-                })?);*/
-            }
-
-            let mut finEd: Vec<String> = Vec::new();
-            //vasm.push(format!("{}", seq_len));
-            println!("\n\n\nAssembled Tree: {:?}", vasm);
-
-            finEd.push("{\n".to_string());
-            finEd.push(format!("{:?}: {:?},\n",vasm[0], vasm[1].parse::<u64>().unwrap_or(0)));
+        finEd.push("{\n".to_string());
+        finEd.push(format!("{:?}: {:?},\n", vasm[0], vasm[1].parse::<u64>().unwrap_or(0)));
 
 
-            for slider in vasm[2..vasm.len()-2].chunks_exact(2) {
-                let current = &slider[0];
-                let next: u64 = slider[1].parse().unwrap_or(0);
-                finEd.push(format!("{:?}: {:?},\n", current, next));
-            }
-
-            for slider in vasm[vasm.len()-2..vasm.len()].chunks_exact(2) {
-                let current = &slider[0];
-                let next: u64 = slider[1].parse().unwrap_or(0);
-                finEd.push(format!("{:?}: {:?}\n}}", current, next));
-            }
-            //finEd.push("}".to_string());
-
-            println!("\n\n\n");
-            //let result: Vec<String>= finEd.into_iter().map(|w: Vec<String>| w.join("  ")).collect();
-            let combined: String = finEd.join("  ");
-            //print!("{:?}", finEd.join("  "));
-            print!("{:?}", combined);
-
-            let hh = File::create(NAME_KEY_STORE_REBUILD);
-            hh?.write_all(combined.as_bytes());
-
-            println!("\n\nWRITTEN COMBINED");
-
-            println!("\n");
-
-            let mut file_object2 = File::open(f)?;
-            (&mut file_object2).take(buffer_limit).read_to_end(&mut buff)?;
-            Ok(buff)
+        for slider in vasm[2..vasm.len() - 2].chunks_exact(2) {
+            let current = &slider[0];
+            let next: u64 = slider[1].parse().unwrap_or(0);
+            finEd.push(format!("{:?}: {:?},\n", current, next));
         }
-        _ => Err(io::Error::new(io::ErrorKind::NotFound, "No file provided"))
-    }
+
+        for slider in vasm[vasm.len() - 2..vasm.len()].chunks_exact(2) {
+            let current = &slider[0];
+            let next: u64 = slider[1].parse().unwrap_or(0);
+            finEd.push(format!("{:?}: {:?}\n}}", current, next));
+        }
+        //finEd.push("}".to_string());
+
+        println!("\n\n\n");
+        //let result: Vec<String>= finEd.into_iter().map(|w: Vec<String>| w.join("  ")).collect();
+        let combined: String = finEd.join("  ");
+        //print!("{:?}", finEd.join("  "));
+        print!("{:?}", combined);
+
+        let hh = File::create(NAME_KEY_STORE_REBUILD);
+        hh?.write_all(combined.as_bytes());
+
+        println!("\n\nWRITTEN COMBINED");
+
+        println!("\n");
+
+        //let mut file_object2 = File::open(f)?;
+        //(&mut file_object2).take(buffer_limit).read_to_end(&mut buff)?;
+    };*/
+
+    Ok(())
 }
 
-fn compute_buffer_size(file_name: Option<&Path>, from_line: u64, to_line: u64) -> Result<(u64,u64), io::Error> {
+fn compute_buffer_size(file_name: Option<&Path>, from_line: u64, to_line: u64) -> Result<(u64, u64), io::Error> {
     match file_name {
         Some(fd) => {
             println!("[Compute_buffer_size] file_name: {:?}", file_name);
@@ -360,6 +357,102 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
 
 fn main() {
     let bulk_closure = || ->  Result<(), io::Error> {
+
+        let mut cin = String::with_capacity(100);
+        let stdin = io::stdin();
+        stdin.read_line(&mut cin)?;
+
+        let cleaned_input = cin.trim_end().to_string();
+
+        let abs_formatter = |c: String| -> Result<PathBuf, io::Error> {
+            let file_object = Path::new(&c);
+            if file_object.is_absolute() {
+                Ok(file_object.to_path_buf())
+            } else {
+                absolute(file_object)
+            }
+        };
+
+        let formatted_path = abs_formatter(cleaned_input)?;
+
+        //this sorta is the new update:
+
+        /*let char_stream_closure = |formatted: &PathBuf, read_limit_TF: &mut Vec<String>| -> Result<(), io::Error>{
+            let mut file_object_char = File::open(formatted)?;
+
+            let metadata: u64 = Path::new(formatted).metadata()?.len(); //bp
+            println!("METADATA: {}", metadata);
+
+
+            for i in 0..metadata {
+                let ch = reading_by_character(&mut file_object_char, i)?;
+                println!("{}", i);
+                read_file_by_limit(&ch, 1, i, read_limit_TF);
+                //print!("{:?}", &ch);
+                //read_file_by_limit(Some(&formatted_path), 1000);
+                //formatting_to_json(&ch,  &mut state, &mut seq_len, &mut total, &mut vasm, &mut key);
+            }
+            Ok(())
+        };*/
+        fn char_stream_closure(
+            formatted: &PathBuf
+        ) -> Result<(), io::Error> {
+            let mut file_object_char = File::open(formatted)?;
+            let mut vv: Vec<String> = Vec::new();
+            let mut state: u64 = 2;
+            let mut seq_len: u64 = 0;
+            let mut total: i64 = -1;
+            let mut key: u64 = 0;
+
+
+            let metadata: u64 = Path::new(formatted).metadata()?.len();
+            println!("METADATA: {}", metadata);
+
+            for i in 0..metadata {
+                // Assuming reading_by_character returns a custom type or Option/String
+                let ch = reading_by_character(&mut file_object_char, i)?;
+                println!("{}", i);
+
+                read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key);
+            }
+            println!("{:?}", vv);
+            Ok(())
+        }
+
+        //[] read_file_by_limit(Some(&formatted_path), 1000); //now find with that file...
+            //let (f, t) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), 4000, 500000)?;
+            /*
+            println!("FINAL READINGS: ");
+
+            for ix in f..t {
+                let ch = reading_by_character(&mut file_object_char, ix)?;
+
+                let get_slice = std::str::from_utf8(&ch).map_err(|_| {
+                    Error::new(ErrorKind::InvalidData, "-||-")
+                })?;
+                print!("{}", get_slice);
+            }
+            println!("\n\n");
+            Ok(())
+        };
+        println!("--- CALLING CHAR STREAMING: ---");
+        */
+        char_stream_closure(&formatted_path);
+
+        //println!("{:?}",vv);
+        Ok(())
+    };
+
+    println!("callling bluk closure");
+    bulk_closure(); // pass variables to read lim
+
+
+
+
+
+
+
+    /* let bulk_closure = || ->  Result<(), io::Error> {
         let mut cin = String::with_capacity(100);
         let stdin = io::stdin();
         stdin.read_line(&mut cin)?;
@@ -392,7 +485,7 @@ fn main() {
             } */
 
             //[] read_file_by_limit(Some(&formatted_path), 1000); //now find with that file...
-            let (f, t) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), 1000, 1001)?;
+            let (f, t) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), 4000, 500000)?;
 
             println!("FINAL READINGS: ");
 
@@ -414,7 +507,7 @@ fn main() {
     };
 
     println!("callling bluk closure");
-    bulk_closure();
+    bulk_closure();*/
 
 
     /*let get_user_run_save = || -> Result<String, io::Error> {
