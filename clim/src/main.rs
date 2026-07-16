@@ -477,9 +477,7 @@ fn main() {
             Ok(())
         };*/
         fn char_stream_closure(
-            formatted: &PathBuf,
-            from_line: u64,
-            to_line: u64
+            formatted: &PathBuf, rebuffering: bool
         ) -> Result<(), io::Error> {
             let mut file_object_char = File::open(formatted)?;
             let mut vv: Vec<String> = Vec::new();
@@ -492,13 +490,15 @@ fn main() {
 
             let metadata: u64 = Path::new(formatted).metadata()?.len();
             println!("METADATA: {}", metadata);
+            if rebuffering {
+                println!("REBUFFERING!!!");
+                for i in 0..metadata {
+                    // Assuming reading_by_character returns a custom type or Option/String
+                    let ch = reading_by_character(&mut file_object_char, i)?;
+                    //println!("{}", i);
 
-            for i in 0..metadata {
-                // Assuming reading_by_character returns a custom type or Option/String
-                let ch = reading_by_character(&mut file_object_char, i)?;
-                //println!("{}", i);
-
-                read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key, &mut used_vasm, &mut finEd,i, metadata);
+                    read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key, &mut used_vasm, &mut finEd,i, metadata);
+                }
             }
 
             //println!("{:?}", vv);
@@ -553,10 +553,11 @@ fn main() {
         match read_file(Some(&formatted_path))?{
             true => {
                 println!("Needs to re-read");
-                char_stream_closure(&formatted_path, 2, 3);
+                char_stream_closure(&formatted_path, true);
             },
             false => {
                 println!("validation is alright");
+                char_stream_closure(&formatted_path, false);
             },
             _ => {}
         }
