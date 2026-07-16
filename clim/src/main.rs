@@ -1,4 +1,5 @@
 use std::fs::{self, File};
+use regex::Regex;
 use std::io::{self, Read, Write, SeekFrom, Seek, ErrorKind, Error};
 use std::path::{absolute, Path, PathBuf};
 use std::collections::BTreeMap;
@@ -355,15 +356,25 @@ fn note_keeper(file_opening: Option<&PathBuf>) -> Result<(), io::Error>{
     Ok(())
 }
 
-fn read_file(file_op: Option<&PathBuf>) -> Result<(), io::Error> { //bp6 needs keep.txt, so just source it...
-    let file_path = file_op.expect("No file provided");
-    let content = fs::read_to_string(file_path)?;
+fn read_file(file_p: Option<&PathBuf>) -> Result<(), io::Error> { //bp6 needs keep.txt, so just source it...
+    let content = fs::read_to_string(FILE_PATH_NAME).unwrap();
+    let reg = Regex::new(r#"(\w+\.\w+)"\s(\d+)"#).unwrap();
 
-    println!("HERE");
-    println!("Content:\n{}", content);
+    let Some(trycapt) = reg.captures(&content) else {
+        println!("no matches for name!");
+        return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no matches"));
+    };
+
+    println!("Regex groups: {:?}\n read lines: {:?}", &trycapt[1], &trycapt[2]);
+
+    let metadata: u64 = Path::new(file_p.unwrap()).metadata()?.len();
+
+    let captured_bytes: u64 = trycapt[2].parse::<u64>().unwrap();
+
+    println!("{} to {}", captured_bytes, metadata);
 
     Ok(())
-}
+} //bpp
 
 pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -> Result<Option<u64>, Box<dyn std::error::Error>> {
     let mut b = Vec::new();
@@ -489,7 +500,6 @@ fn main() {
 
             println!("[{rx} -> {ry}] <<< COMPUTED");
             println!("<<<<< HERE (single vector value)");
-
             Ok(())
         }
 
