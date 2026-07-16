@@ -4,6 +4,9 @@ use std::io::{self, Read, Write, SeekFrom, Seek, ErrorKind, Error};
 use std::path::{absolute, Path, PathBuf};
 use std::collections::BTreeMap;
 use serde_json::to_string_pretty;
+use rustybar::ProgressBar;
+use rustybar::FillStyle;
+use rustybar::EmptyStyle;
 
 
 
@@ -490,10 +493,15 @@ fn main() {
 
             let metadata: u64 = Path::new(formatted).metadata()?.len();
             println!("METADATA: {}", metadata);
+
             if rebuffering {
-                println!("REBUFFERING!!!");
+
+                let mut bar = ProgressBar::new("[Rebuffering]", 40, metadata.try_into().unwrap());
+                bar.style(FillStyle::Solid, EmptyStyle::Dash);
+
                 for i in 0..metadata {
-                    // Assuming reading_by_character returns a custom type or Option/String
+                    bar.tick((i + 1).try_into().unwrap());
+
                     let ch = reading_by_character(&mut file_object_char, i)?;
                     //println!("{}", i);
 
