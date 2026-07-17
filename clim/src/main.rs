@@ -520,7 +520,8 @@ fn main() {
             //println!("METADATA: {}", metadata);
 
             if rebuffering {
-
+                let mut file = File::create(NAME_KEY_STORE_REBUILD)?;
+                file.flush()?;
                 let mut bar = ProgressBar::new("[Rebuffering]", 40, metadata.try_into().unwrap());
                 bar.style(FillStyle::Solid, EmptyStyle::Dash);
 
