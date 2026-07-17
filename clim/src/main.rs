@@ -190,7 +190,7 @@ fn read_file_by_limit(stream: &[u8],
             //chage to interation BP
             //println!("{} ==? {}", fs_iteration, fs_size - 1);
 
-            println!("INL: {:?}", finEd);
+            //    println!("INL: {:?}", finEd);
             //let mut handle = File::open(NAME_KEY_STORE_REBUILD)?;
             let mut handle = OpenOptions::new()
                 .write(true)
@@ -257,7 +257,7 @@ fn read_file_by_limit(stream: &[u8],
 fn compute_buffer_size(file_name: Option<&Path>, from_line: u64, to_line: u64) -> Result<(u64, u64), io::Error> {
     match file_name {
         Some(fd) => {
-            println!("[Compute_buffer_size] file_name: {:?}", file_name);
+            //println!("[Compute_buffer_size] file_name: {:?}", file_name);
             //let mut file_open = File::open(fd)?;
             let mut file_open = File::open(NAME_KEY_STORE_REBUILD)?;
 
@@ -353,7 +353,7 @@ fn compute_buffer_size(file_name: Option<&Path>, from_line: u64, to_line: u64) -
             })?;
 
             let buffer_size: u64 = offset_two - offset_one;
-            println!("Ranges: [{} -> {}] = {}Bytes", offset_one, offset_two, buffer_size);
+            //println!("Ranges: [{} -> {}] = {}Bytes", offset_one, offset_two, buffer_size);
 
             Ok((offset_one, offset_two))
         }
@@ -378,9 +378,9 @@ fn note_keeper(file_opening: Option<&PathBuf>) -> Result<(), io::Error>{
     //syncing?
     //let mut len_file = File::create(file_opening.is_some())?.metadata()?.len();
     let path = file_opening.as_deref().unwrap();
-    println!("path: {:?}", path.file_name());
+    //println!("path: {:?}", path.file_name());
     let metadata: u64 = Path::new(path).metadata()?.len();
-    println!("Size is: {}", metadata);
+    //println!("Size is: {}", metadata);
     let mut file_note = File::create(FILE_PATH_NAME)?;
     file_note.write_all(format!("{:?} {}",path.file_name().unwrap(), &metadata).as_bytes())?;
 
@@ -396,7 +396,7 @@ fn read_file(file_p: Option<&PathBuf>) -> Result<bool, io::Error> { //bp6 needs 
         return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no matches"));
     };
 
-    println!("Regex groups: {:?}\n read lines: {:?}", &trycapt[1], &trycapt[2]);
+    //println!("Regex groups: {:?}\n read lines: {:?}", &trycapt[1], &trycapt[2]);
     let path_object = Path::new(file_p.unwrap());
 
     let metadata: u64 = path_object.metadata()?.len();
@@ -406,10 +406,10 @@ fn read_file(file_p: Option<&PathBuf>) -> Result<bool, io::Error> { //bp6 needs 
     let captured_name: String = trycapt[1].to_string();
 
     if captured_bytes == metadata && captured_name == file_name {
-        println!("(C) -> [Read: {} to Given: {}]\t[Read: {} to Given: {}]", captured_bytes, metadata, captured_name, file_name);
+        //println!("(C) -> [Read: {} to Given: {}]\t[Read: {} to Given: {}]", captured_bytes, metadata, captured_name, file_name);
         Ok::<bool, io::Error>(false)
     } else {
-        println!("(!) -> [Read: {} to Given: {}]\t[Read: {} to Given: {}]", captured_bytes, metadata, captured_name, file_name);
+        //println!("(!) -> [Read: {} to Given: {}]\t[Read: {} to Given: {}]", captured_bytes, metadata, captured_name, file_name);
         Ok::<bool, io::Error>(true)
     }
 } //bpp
@@ -428,7 +428,6 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
     //println!("{:#?}", content);
 
     //println!("{:?}", data);
-    println!("<<<<<<<<<<<<<<<<<");
 
     let ordered_map: BTreeMap<u64, u64> = serde_json::from_str(&content).unwrap_or_else(|_| BTreeMap::new()); //where it stopped
 
@@ -467,7 +466,8 @@ pub fn walk_for_index(data: &[u8], buffer_limit: usize, index_to_walk_on: u64) -
 
 fn main() {
     let bulk_closure = || ->  Result<(), io::Error> {
-
+        print!("Please provide file name: ");
+        io::stdout().flush()?;
         let mut cin = String::with_capacity(100);
         let stdin = io::stdin();
         stdin.read_line(&mut cin)?;
@@ -517,7 +517,7 @@ fn main() {
             let mut finEd: Vec<String> = Vec::new();
 
             let metadata: u64 = Path::new(formatted).metadata()?.len();
-            println!("METADATA: {}", metadata);
+            //println!("METADATA: {}", metadata);
 
             if rebuffering {
 
@@ -532,13 +532,20 @@ fn main() {
 
                     read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key, &mut used_vasm, &mut finEd,i, metadata);
                 }
+                println!("");
             }
 
             //println!("{:?}", vv);
             let helper_func = || -> io::Result<(u64, u64)> {
+                print!("Read from line: ");
+                io::stdout().flush()?;
+
                 let mut cin_from = String::with_capacity(10);
                 let stdin = io::stdin();
                 stdin.read_line(&mut cin_from)?;
+
+                print!("Read to line: ");
+                io::stdout().flush()?;
 
                 let mut cin_to = String::with_capacity(10);
                 let stdin = io::stdin();
@@ -548,20 +555,32 @@ fn main() {
                 let number_to: u64 = cin_to.trim().parse().unwrap();
 
                 let (rx, ry) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), number_from, number_to)?;
-                println!("{} {}", rx, ry);
+                //println!("{} {}", rx, ry);
                 Ok((rx, ry))
             };
 
             //let (rx, ry) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), number_from, number_to)?;
             let (rx,ry) = helper_func()?;
             for i in rx..ry {
-                print!("{}", std::str::from_utf8(&reading_by_character(&mut file_object_char, i)?).map_err(|_|{
+                /* print!("{}", std::str::from_utf8(&reading_by_character(&mut file_object_char, i)?).map_err(|_|{
                     std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string())
-                })?);
+                })?); */
+
+                let raw_bytes = reading_by_character(&mut file_object_char, i)?;
+
+                let char = std::str::from_utf8(&raw_bytes).map_err(|_| {
+                    std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string())
+                })?;
+
+                if char == "," {
+                    print!(" | ");
+                } else {
+                    print!("{}", &char);
+                }
             }
 
-            println!("[{rx} -> {ry}] <<< COMPUTED");
-            println!("<<<<< HERE (single vector value)");
+            //println!("[{rx} -> {ry}] <<< COMPUTED");
+            //println!("<<<<< HERE (single vector value)");
             Ok(())
         }
 
@@ -585,11 +604,11 @@ fn main() {
         */
         match read_file(Some(&formatted_path))?{
             true => {
-                println!("Needs to re-read");
+                //println!("Needs to re-read");
                 char_stream_closure(&formatted_path, true);
             },
             false => {
-                println!("validation is alright");
+                //println!("validation is alright");
                 char_stream_closure(&formatted_path, false);
             },
             _ => {}
@@ -600,7 +619,6 @@ fn main() {
         Ok(())
     };
 
-    println!("callling bluk closure");
     bulk_closure(); // pass variables to read lim
 
 
