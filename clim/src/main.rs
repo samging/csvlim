@@ -15,6 +15,7 @@ const NAME_KEY_STORE: &'static str = "KEY_SAVE.txt"; //find indexes
 const NAME_KEY_STORE_REBUILD: &'static str = "KEY_SAVE_REBUILD.txt";
 static FILE_PATH_NAME: &'static str = "keep.txt"; //keep track where we ended
 
+static FILE_BUBBLE_REBUILD: &'static str = "bubbles.txt"; //keep track where we ended
 pub struct Buffer<'a> {
     bytes: Vec<[&'a str; 100]>
 }
@@ -522,6 +523,8 @@ fn main() {
             if rebuffering {
                 let mut file = File::create(NAME_KEY_STORE_REBUILD)?;
                 file.flush()?;
+                let mut bubble_file = File::create(FILE_BUBBLE_REBUILD)?;
+
                 let mut bar = ProgressBar::new("[Rebuffering]", 40, metadata.try_into().unwrap());
                 bar.style(FillStyle::Solid, EmptyStyle::Dash);
 
@@ -562,6 +565,8 @@ fn main() {
 
             //let (rx, ry) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), number_from, number_to)?;
             let (rx,ry) = helper_func()?;
+
+            let mut bubble_file = File::create(FILE_BUBBLE_REBUILD)?;
             for i in rx..ry {
                 /* print!("{}", std::str::from_utf8(&reading_by_character(&mut file_object_char, i)?).map_err(|_|{
                     std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string())
@@ -569,12 +574,14 @@ fn main() {
 
                 let raw_bytes = reading_by_character(&mut file_object_char, i)?;
 
+
                 let char = std::str::from_utf8(&raw_bytes).map_err(|_| {
                     std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string())
                 })?;
 
                 if char == "," {
                     print!(" | ");
+                    bubble_file.write_all(format!(" {}", i).as_bytes())?; //666 bp (formatted on computed buffer) - consider to to_le_bytes();
                 } else {
                     print!("{}", &char);
                 }
