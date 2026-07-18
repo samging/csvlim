@@ -523,7 +523,13 @@ fn main() {
             if rebuffering {
                 let mut file = File::create(NAME_KEY_STORE_REBUILD)?;
                 file.flush()?;
-                let mut bubble_file = File::create(FILE_BUBBLE_REBUILD)?;
+
+
+                let mut bubble_file = OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .truncate(true)
+                    .open(FILE_BUBBLE_REBUILD).expect("CRASHED: Could not create the file!");;
 
                 let mut bar = ProgressBar::new("[Rebuffering]", 40, metadata.try_into().unwrap());
                 bar.style(FillStyle::Solid, EmptyStyle::Dash);
@@ -532,13 +538,20 @@ fn main() {
                     bar.tick((i + 1).try_into().unwrap());
 
                     let ch = reading_by_character(&mut file_object_char, i)?;
-                    //println!("{}", i);
+                    //cprintln!("{} {}", ch[0], std::str::from_utf8(&ch).map_err(|_|{ std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string()) })?);
+
+                    if ch[0] == 44 {
+                        println!("read , {}",i);
+
+                        bubble_file
+                            .write_all(format!("{},", i).as_bytes())
+                            .expect("FAILED TO WRITE TO BUBBLE FILE");
+                    }
 
                     read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key, &mut used_vasm, &mut finEd,i, metadata);
                 }
                 println!("");
             }
-
             //println!("{:?}", vv);
             let helper_func = || -> io::Result<(u64, u64)> {
                 print!("Read from line: ");
@@ -566,7 +579,6 @@ fn main() {
             //let (rx, ry) = compute_buffer_size(Some(Path::new(NAME_KEY_STORE_REBUILD)), number_from, number_to)?;
             let (rx,ry) = helper_func()?;
 
-            let mut bubble_file = File::create(FILE_BUBBLE_REBUILD)?;
             for i in rx..ry {
                 /* print!("{}", std::str::from_utf8(&reading_by_character(&mut file_object_char, i)?).map_err(|_|{
                     std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string())
@@ -581,7 +593,6 @@ fn main() {
 
                 if char == "," {
                     print!(" | ");
-                    bubble_file.write_all(format!(" {}", i).as_bytes())?; //666 bp (formatted on computed buffer) - consider to to_le_bytes();
                 } else {
                     print!("{}", &char);
                 }
