@@ -534,19 +534,42 @@ fn main() {
                 let mut bar = ProgressBar::new("[Rebuffering]", 40, metadata.try_into().unwrap());
                 bar.style(FillStyle::Solid, EmptyStyle::Dash);
 
+                let mut id_counter: u8 = 0;
+                let mut should_increment: bool = true;
+                let mut remember_headers: Vec<u64> = Vec::new();
+
                 for i in 0..metadata {
                     bar.tick((i + 1).try_into().unwrap());
 
                     let ch = reading_by_character(&mut file_object_char, i)?;
-                    //cprintln!("{} {}", ch[0], std::str::from_utf8(&ch).map_err(|_|{ std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string()) })?);
+                    //println!("{} {}", ch[0], std::str::from_utf8(&ch).map_err(|_|{ std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string()) })?);
 
                     if ch[0] == 44 {
-                        println!("read , {}",i);
-
+                        // println!("read , {}",i);
+                        if should_increment == true{
+                            id_counter = id_counter + 1;
+                            remember_headers.push(i);
+                        }
                         bubble_file
                             .write_all(format!("{},", i).as_bytes())
                             .expect("FAILED TO WRITE TO BUBBLE FILE");
                     }
+
+
+                    if ch[0] == 10 && should_increment {
+                        println!("Read NewLine: {}", id_counter);
+                        should_increment = false;
+                    }
+
+                    if should_increment == false {
+                        for headers in 0..id_counter as usize{
+                            print!("{} ", remember_headers[headers]);
+                        }
+                        //index * header = value (this is how find will work)
+                        println!("Wished for header index 1: [{} {}]", remember_headers[0], remember_headers[1]);
+                    }
+
+                    
 
                     read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key, &mut used_vasm, &mut finEd,i, metadata);
                 }
