@@ -505,7 +505,74 @@ fn main() {
             }
             Ok(())
         };*/
-        fn char_stream_closure(
+
+
+        pub fn create_bubble_file2(
+            char_slice: &[u8],      // renamed from `char` to avoid reserving the keyword
+            comma_count: u8,
+            current_comma: &mut u64,
+            curr: &mut u64,         // Added to track absolute character index like Python's `curr`
+            file_size: u64,         // Acts as Python's `MA` (len of total input)
+        ) -> Result<(), std::io::Error> {
+
+            // Open in append mode so we don't wipe the file on every single character iteration
+            let mut bubble_file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("bubbled.csv")?;
+
+            let ascii_str = std::str::from_utf8(char_slice).unwrap_or("");
+            let is_comma = char_slice[0] == 44; // ',' ASCII value
+            let is_newline = char_slice[0] == 10; // '\n' ASCII value
+
+            let target_comma_count = comma_count as u64;
+            let min_index: u64 = 0; // Python's MI
+
+            // Match against the absolute character position `curr`
+            match *curr {
+                // case x if x == MI:
+                x if x == min_index => {
+                    bubble_file.write_all(ascii_str.as_bytes())?;
+                    *curr += 1;
+                }
+
+                // case x if x in generated: (matches any valid index within file_size)
+                x if x < file_size => {
+                    if is_comma {
+                        bubble_file.write_all(b",")?;
+
+                        // if current_comma != comma_count - 1:
+                        if *current_comma != (target_comma_count - 1) {
+                            // print 3 spaces
+                            bubble_file.write_all(b"   ")?;
+                        }
+
+                        *curr += 1;
+                        *current_comma += 1;
+
+                        // if current_comma == comma_count:
+                        if *current_comma == target_comma_count {
+                            *current_comma = 0;
+                        }
+                    } else {
+                        bubble_file.write_all(ascii_str.as_bytes())?;
+                        *curr += 1;
+                    }
+                }
+
+                _ => panic!("Index out of bounds or file_size exceeded!"),
+            }
+
+            // if char == "\n":
+            if is_newline {
+                // Optional tracking equivalent to Python's print("RESTARTED")
+                println!("RESTARTED");
+            }
+
+            Ok(())
+        }
+
+        pub fn char_stream_closure(
             formatted: &PathBuf, rebuffering: bool
         ) -> Result<(), io::Error> {
             let mut file_object_char = File::open(formatted)?;
@@ -529,7 +596,14 @@ fn main() {
                     .create(true)
                     .write(true)
                     .truncate(true)
-                    .open(FILE_BUBBLE_REBUILD).expect("CRASHED: Could not create the file!");;
+                    .open(FILE_BUBBLE_REBUILD).expect("CRASHED: Could not create the file!");
+
+                let mut bubble_file_csv = OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .truncate(true)
+                    .open("bubbled.csv")
+                    .expect("CRASHED: Could not create the file!");
 
                 let mut bar = ProgressBar::new("[Rebuffering]", 40, metadata.try_into().unwrap());
                 bar.style(FillStyle::Solid, EmptyStyle::Dash);
@@ -537,11 +611,18 @@ fn main() {
                 let mut id_counter: u8 = 0;
                 let mut should_increment: bool = true;
                 let mut remember_headers: Vec<u64> = Vec::new();
+                let mut current_comma: u64 = 0;
+                let mut curr: u64 = 0;
 
                 for i in 0..metadata {
                     bar.tick((i + 1).try_into().unwrap());
 
                     let ch = reading_by_character(&mut file_object_char, i)?;
+
+                    //if is set to false, then it read the first line of headers
+                    if should_increment == false {
+                        create_bubble_file2(&ch, id_counter, &mut current_comma, &mut curr, metadata);
+                    }
                     //println!("{} {}", ch[0], std::str::from_utf8(&ch).map_err(|_|{ std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string()) })?);
 
                     if ch[0] == 44 {
@@ -569,7 +650,7 @@ fn main() {
                         println!("Wished for header index 1: [{} {}]", remember_headers[0], remember_headers[1]);
                     }
 
-                    
+
 
                     read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key, &mut used_vasm, &mut finEd,i, metadata);
                 }
