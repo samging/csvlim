@@ -614,6 +614,8 @@ fn main() {
                 let mut current_comma: u64 = 0;
                 let mut curr: u64 = 0;
 
+                let mut description_table = Vec::new();
+
                 for i in 0..metadata {
                     bar.tick((i + 1).try_into().unwrap());
 
@@ -634,6 +636,10 @@ fn main() {
                         bubble_file
                             .write_all(format!("{},", i).as_bytes())
                             .expect("FAILED TO WRITE TO BUBBLE FILE");
+                    } else {
+                        if should_increment {
+                            description_table.push(ch[0]);
+                        }
                     }
 
 
@@ -643,10 +649,26 @@ fn main() {
                     }
 
                     if should_increment == false {
+
                         for headers in 0..id_counter as usize{
-                            print!("{} ", remember_headers[headers]);
+                            print!("{} ", remember_headers[headers]); //seek those headers seek_by_index() -> .window(2)
                         }
+
+                        for window in remember_headers[0..id_counter as usize].windows(2) {
+                            let left_header = &window[0];
+                            let right_header = &window[1];
+
+                            println!("Description talbe ->");
+                            for i in *left_header..*right_header {
+                                print!("{},", description_table[i as usize]);
+                            }
+                        }
+
                         //index * header = value (this is how find will work)
+
+
+                        println!("Description table: {:?}",description_table); //read all?
+
                         println!("Wished for header index 1: [{} {}]", remember_headers[0], remember_headers[1]);
                     }
 
