@@ -584,6 +584,9 @@ fn main() {
             let mut used_vasm = String::new();
             let mut finEd: Vec<String> = Vec::new();
 
+
+            let mut dbg_inc = 0; //tmp just for counting elements
+
             let metadata: u64 = Path::new(formatted).metadata()?.len();
             //println!("METADATA: {}", metadata);
 
@@ -613,6 +616,9 @@ fn main() {
                 let mut remember_headers: Vec<u64> = Vec::new();
                 let mut current_comma: u64 = 0;
                 let mut curr: u64 = 0;
+                pub fn to_str(byte: u8) -> Option<String> {
+                    if byte.is_ascii() { Some(String::from(byte as char)) } else { None }
+                }
 
                 let mut description_table = Vec::new();
 
@@ -627,21 +633,29 @@ fn main() {
                     }
                     //println!("{} {}", ch[0], std::str::from_utf8(&ch).map_err(|_|{ std::io::Error::new(std::io::ErrorKind::Other, "rx -> ry boundary problem".to_string()) })?);
 
-                    if ch[0] == 44 {
-                        // println!("read , {}",i);
-                        if should_increment == true{
-                            id_counter = id_counter + 1;
+                    if ch[0] == 44 || ch[0] == 10 {
+                        if should_increment == true {
                             remember_headers.push(i);
+                            id_counter = id_counter + 1;
                         }
+
                         bubble_file
                             .write_all(format!("{},", i).as_bytes())
                             .expect("FAILED TO WRITE TO BUBBLE FILE");
-                    } else {
-                        if should_increment {
-                            description_table.push(ch[0]);
-                        }
                     }
 
+                    if should_increment {
+                        description_table.push(ch[0]);
+                    }
+
+                    /*if ch[0] == 10  && should_increment {
+                        println!("CAUSED");
+                        id_counter = id_counter + 1;
+                        remember_headers.push(i);
+                        bubble_file
+                            .write_all(format!("{},", i).as_bytes())
+                            .expect("FAILED TO WRITE TO BUBBLE FILE");
+                    }*/
 
                     if ch[0] == 10 && should_increment {
                         println!("Read NewLine: {}", id_counter);
@@ -649,35 +663,34 @@ fn main() {
                     }
 
                     if should_increment == false {
-
                         for headers in 0..id_counter as usize{
                             print!("{} ", remember_headers[headers]); //seek those headers seek_by_index() -> .window(2)
                         }
-
-                        for window in remember_headers[0..id_counter as usize].windows(2) {
-                            let left_header = &window[0];
-                            let right_header = &window[1];
-
-                            println!("Description talbe ->");
-                            for i in *left_header..*right_header {
-                                print!("{},", description_table[i as usize]);
-                            }
-                        }
-
                         //index * header = value (this is how find will work)
-
-
-                        println!("Description table: {:?}",description_table); //read all?
-
-                        println!("Wished for header index 1: [{} {}]", remember_headers[0], remember_headers[1]);
+                        //println!("Description table: {:?}",description_table); //read all?
+                        println!("Wished for header index 1: [{} {}] - max range: [{}]", remember_headers[0], remember_headers[1], remember_headers.len());
                     }
-
-
 
                     read_file_by_limit(&ch, 1, i, &mut state, &mut seq_len, &mut total, &mut vv, &mut key, &mut used_vasm, &mut finEd,i, metadata);
                 }
-                println!("");
+                //println!("DT len: {}", description_table.len());
+                for (i, window) in remember_headers[0..id_counter as usize].windows(2).enumerate() {
+                    let left_header = &window[0];
+                    let right_header = &window[1];
+
+                    print!("\r\n[{}] -> ", i); //DT table
+                    for i in *left_header + 1..*right_header {
+                        if let Some(ch) = to_str(description_table[i as usize]) {
+                            print!("{}",ch);
+                        }
+                    }
+                }
+
+                pub fn find_by_window(index_from: usize, rem_headers: Vec<String>) {
+
+                }
             }
+            println!("");
             //println!("{:?}", vv);
             let helper_func = || -> io::Result<(u64, u64)> {
                 print!("Read from line: ");
