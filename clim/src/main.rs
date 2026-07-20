@@ -645,7 +645,7 @@ fn main() {
                     }
 
                     if should_increment {
-                        description_table.push(ch[0]);
+                        description_table.push(format!(">").into_bytes());
                     }
 
                     /*if ch[0] == 10  && should_increment {
@@ -678,18 +678,55 @@ fn main() {
                     let left_header = &window[0];
                     let right_header = &window[1];
 
-                    print!("\r\n[{}] -> ", i); //DT table
+                    print!("\r\n[{}] -> ", i+1); //DT table
                     for i in *left_header + 1..*right_header {
                         if let Some(ch) = to_str(description_table[i as usize]) {
                             print!("{}",ch);
                         }
                     }
+                    io::stdout().flush().unwrap();
                 }
 
-                pub fn find_by_window(index_from: usize, rem_headers: Vec<String>) {
 
+                pub fn input_id_stdin() -> Result<(), io::Error> {
+                    print!("\r\nInput the ID: ");
+                    io::stdout().flush()?;
+
+                    let mut cin_strr = String::new();
+                    eprintln!("DEBUG: Reached step 1");
+
+                    // Read byte-by-byte instead of waiting for a newline character
+                    let mut handle = io::stdin().lock();
+                    let mut buffer = [0; 1];
+
+                    loop {
+                        handle.read_exact(&mut buffer)?;
+                        let byte = buffer[0];
+
+                        // Unblock on either Carriage Return (13) or Newline (10)
+                        if byte == b'\n' || byte == b'\r' {
+                            break;
+                        }
+                        cin_strr.push(byte as char);
+                    }
+
+                    eprintln!("\r\nDEBUG: Reached step 2, string is: {:?}", cin_strr);
+
+                    let write_pattern = Regex::new(r"(\w+)\:(\w+)\:(\w+)");
+
+                    if let Some(grps) =  write_pattern
+                        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
+                        .captures(&cin_strr)
+                    {
+                        println!("\r\nID: {} | COL: {} | WRITE: {}", &grps[1], &grps[2], &grps[3]);
+                    }
+
+                    Ok(())
                 }
+                input_id_stdin();
+
             }
+
             println!("");
             //println!("{:?}", vv);
             let helper_func = || -> io::Result<(u64, u64)> {
